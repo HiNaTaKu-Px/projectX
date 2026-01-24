@@ -1,225 +1,476 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import Link from "next/link";
-import * as Tone from "tone";
 import MessageBox from "../../../components/MessageBox";
 import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
+import SuperFormalAnimation from "@/components/animation/SuperFormalAnimation";
 
 export default function Home() {
-  const [coins, setCoins] = useState(500000);
+  const router = useRouter();
+
+  // -----------------------------
+  // Audio
+  // -----------------------------
+  const clickPlayer = useRef<HTMLAudioElement | null>(null);
+
+  useEffect(() => {
+    clickPlayer.current = new Audio("/sounds/click/click.mp3");
+  }, []);
+
+  const playClickSound = () => {
+    if (clickPlayer.current) {
+      clickPlayer.current.currentTime = 0;
+      clickPlayer.current.play();
+    }
+  };
+
+  const withClickSound = (callback?: () => void) => () => {
+    playClickSound();
+    callback?.();
+  };
+
+  // -----------------------------
+  // UI States
+  // -----------------------------
   const [message, setMessage] = useState("");
   const [visible, setVisible] = useState(false);
-
-  // 背景
   const [bgIndex, setBgIndex] = useState(5);
+  const [coinEffect, setCoinEffect] = useState<{
+    id: number;
+    value: number;
+  } | null>(null);
+  const [showSuperFormal, setShowSuperFormal] = useState(false);
+  const [showClearButton, setShowClearButton] = useState(false);
 
+  // -----------------------------
+  // Game States
+  // -----------------------------
+  const [coins, setCoins] = useState<number | null>(null);
+  const [items, setItems] = useState<(string | null)[]>(Array(7).fill(null));
+  const [stockItems, setStockItems] = useState<Record<string, number>>({});
+  const safeCoins = coins ?? 0;
+  const currentCoins = coins ?? 0;
+
+  // -----------------------------
+  // Constants
+  // -----------------------------
   const backgrounds = [
-    "bg-linear-to-r from-purple-500 to-pink-500",
-    "bg-linear-to-r from-blue-500 to-cyan-500",
-    "bg-linear-to-r from-green-500 to-lime-500",
-    "bg-linear-to-r from-orange-500 to-red-500",
-    "bg-linear-to-r from-indigo-500 to-purple-500",
+    "bg-gradient-to-r from-neutral-700 to-neutral-900",
     "bg-white",
   ];
 
-  // 🎵 MP3 プレイヤーを保持
-  const clickPlayer = useRef<Tone.Player | null>(null);
+  const gachaItems = ["💡ノーマル", "✨レア", "🎇ウルトラレア", "🎆レジェンド"];
+  const rarityOrder = [...gachaItems];
 
-  // 🎵 クライアント側でのみ MP3 を読み込む
+  const itemCoinValues: Record<string, number> = {
+    "💡ノーマル": 100,
+    "✨レア": 500,
+    "🎇ウルトラレア": 3000,
+    "🎆レジェンド": 10000,
+  };
+
+  // -----------------------------
+  // LocalStorage
+  // -----------------------------
   useEffect(() => {
-    clickPlayer.current = new Tone.Player("/sounds/click.mp3").toDestination();
+    const saved = localStorage.getItem("coins");
+    if (saved) {
+      setCoins(JSON.parse(saved));
+    } else {
+      setCoins(50000); // 初期値
+    }
   }, []);
 
-  // 🎵 シンセ音
-  const playSound = async () => {
-    await Tone.start();
-    const synth = new Tone.Synth().toDestination();
-    synth.triggerAttackRelease("C6", "32n");
-  };
+  useEffect(() => {
+    if (coins !== null) {
+      localStorage.setItem("coins", JSON.stringify(coins));
+    }
+  }, [coins]);
 
-  // 🎵 クリックだけ MP3
-  const playClickSound = async () => {
-    await Tone.start();
-    clickPlayer.current?.start();
-  };
-
-  function getRandomCoin(): number {
-    const r = Math.random();
-    if (r < 0.7) return 1;
-    if (r < 0.9) return 5;
-    if (r < 0.99) return 10;
-    return 100;
-  }
+  // -----------------------------
+  // Message
+  // -----------------------------
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const showMessage = (text: string) => {
     setMessage(text);
     setVisible(true);
-    setTimeout(() => setVisible(false), 3000);
+
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+
+    timeoutRef.current = setTimeout(() => {
+      setVisible(false);
+      timeoutRef.current = null;
+    }, 3000);
   };
+
+  // -----------------------------
+  // Coin Effect
+  // -----------------------------
+
+  let effectId = 0;
 
   const handleClick = () => {
-    const amount = getRandomCoin();
-    setCoins((prev) => prev + amount);
-    showMessage(`${amount} コインゲット！`);
-    playClickSound(); // ← MP3 再生
+    const amount = getRandomAmount();
+
+    // prev が null の場合は 0 として扱う
+    setCoins((prev) => (prev ?? 0) + amount);
+
+    setCoinEffect({ id: effectId++, value: amount });
   };
 
+  useEffect(() => {
+    if (!coinEffect) return;
+
+    const timeout = setTimeout(() => setCoinEffect(null), 800);
+    return () => clearTimeout(timeout);
+  }, [coinEffect]);
+
+  // -----------------------------
+  // Background
+  // -----------------------------
   const changeBackground = () => {
     setBgIndex((prev) => (prev + 1) % backgrounds.length);
-    playSound();
   };
 
+  // -----------------------------
+  // Gacha
+  // -----------------------------
+  const getRandomItem = () => {
+    const r = Math.random();
+    if (r < 0.7) return "💡ノーマル";
+    if (r < 0.9) return "✨レア";
+    if (r < 0.99) return "🎇ウルトラレア";
+    return "🎆レジェンド";
+  };
+
+  const getRandomAmount = () => {
+    const r = Math.random();
+    if (r < 0.7) return 1;
+    if (r < 0.9) return 50;
+    if (r < 0.99) return 100;
+    return 1000;
+  };
+
+  const sortedItems = Object.entries(stockItems)
+    .sort(
+      ([a], [b]) =>
+        rarityOrder.findIndex((r) => a.includes(r)) -
+        rarityOrder.findIndex((r) => b.includes(r)),
+    )
+    .slice(0, 6);
+
+  const formatItemCounts = (items: string[]) => {
+    const counts: Record<string, number> = {};
+    for (const item of items) counts[item] = (counts[item] || 0) + 1;
+
+    return gachaItems
+      .filter((item) => counts[item])
+      .map((item) => `${item}×${counts[item]}`);
+  };
+
+  const handleGacha = (count: number) => {
+    const cost = 500 * count;
+
+    // coins が null の場合はガチャ不可
+    if (coins === null || coins < cost) {
+      return showMessage("コインが足りません！");
+    }
+
+    const results: string[] = [];
+    const newItems = [...items];
+    const newStock = { ...stockItems };
+
+    for (let i = 0; i < count; i++) {
+      const item = getRandomItem();
+      results.push(item);
+
+      const index = newItems.findIndex((v) => v === null);
+      if (index !== -1) newItems[index] = item;
+
+      newStock[item] = (newStock[item] || 0) + 1;
+    }
+
+    setItems(newItems);
+    setStockItems(newStock);
+
+    // prev が null の可能性を排除
+    setCoins((prev) => (prev ?? 0) - cost);
+
+    const preview = formatItemCounts(results).join(" / ");
+    showMessage(`${count}連結果：${preview}`);
+  };
+
+  // -----------------------------
+  // アイテム使用
+  // -----------------------------
+  const handleUseItem = (itemName: string) => {
+    const count = stockItems[itemName] || 0;
+    if (count <= 0) return;
+
+    const value = itemCoinValues[itemName] || 0;
+
+    const newStock = { ...stockItems };
+    newStock[itemName] = Math.max(0, count - 1);
+
+    if (newStock[itemName] === 0) delete newStock[itemName];
+
+    setStockItems(newStock);
+
+    // prev が null の可能性に対応
+    setCoins((prev) => (prev ?? 0) + value);
+
+    showMessage(`${itemName} を使用して +${value} コイン獲得！`);
+  };
+
+  const useAllItemsAllTypes = () => {
+    let totalCoins = 0;
+
+    for (const itemName in stockItems) {
+      const count = stockItems[itemName];
+      const value = itemCoinValues[itemName];
+      if (!value || !count) continue;
+
+      totalCoins += value * count;
+    }
+
+    setStockItems({});
+
+    // prev が null の可能性に対応
+    setCoins((prev) => (prev ?? 0) + totalCoins);
+
+    showMessage(`全アイテムを使用して +${totalCoins} コイン獲得！`);
+  };
+
+  // -----------------------------
+  // ゲームクリア
+  // -----------------------------
   const handleClear = () => {
     showMessage("ゲームクリア！！");
-    playSound();
+    setShowSuperFormal(true);
+
+    setTimeout(() => {
+      setShowSuperFormal(false);
+      setShowClearButton(true);
+    }, 1600);
   };
 
   return (
     <main className="relative min-h-screen overflow-hidden text-gray-800">
-      {/* 戻るヘッダー */}
-      <header className="w-full p-4 bg-black/70 text-white flex items-center backdrop-blur">
-        <Link
-          href="/"
-          className="flex items-center gap-2 hover:opacity-70 transition"
-        >
-          <span className="text-2xl">←</span>
-          <span className="text-lg font-bold">戻る</span>
-        </Link>
-      </header>
-
       <AnimatePresence mode="wait">
+        {/* 背景アニメーション */}
         <motion.div
           key={bgIndex}
-          initial={{ opacity: 0, scale: 1.1 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.95 }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
           transition={{ duration: 0.6 }}
+          exit={{ opacity: 0 }}
           className={`absolute inset-0 -z-10 ${backgrounds[bgIndex]}`}
         />
+
+        {/* コインエフェクト（ボタンのすぐ上に表示） */}
+        {coinEffect && (
+          <motion.span
+            key={coinEffect.id}
+            initial={{ opacity: 0, y: 0, scale: 0.8 }}
+            animate={{ opacity: 1, y: -10, scale: 1.1 }}
+            exit={{ opacity: 0, y: -20, scale: 0.9 }}
+            transition={{ duration: 0.4 }}
+            className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 text-yellow-500 text-2xl font-extrabold pointer-events-none select-none"
+          >
+            +{coinEffect.value}
+          </motion.span>
+        )}
+
+        {/* ゲームクリア演出 */}
+        {showSuperFormal && <SuperFormalAnimation />}
       </AnimatePresence>
 
-      <div className="p-6 space-y-6">
-        <h1 className="text-6xl font-extrabold text-center text-gray-900 drop-shadow-xl tracking-[0.5em] mt-4 mb-6">
+      <div className="p-6 space-y-15">
+        <h1 className="text-3xl font-bold text-center text-[#1f1f1f] bg-blue-100 px-6 py-3 rounded-md border-2 border-blue-300 shadow-[2px_2px_0_0_#90caf9] font-['VT323'] tracking-wide">
           クリックゲーム
         </h1>
 
-        <div className="flex justify-center w-full">
+        {/* クリックボタン + コインエフェクト */}
+        <div className="relative flex justify-center w-full !mb-10">
+          {/* コインエフェクト */}
+          {coinEffect && (
+            <motion.span
+              key={coinEffect.id}
+              initial={{ opacity: 0, y: 0, scale: 0.8 }}
+              animate={{ opacity: 1, y: -10, scale: 1.1 }}
+              exit={{ opacity: 0, y: -20, scale: 0.9 }}
+              transition={{ duration: 0.4 }}
+              className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 text-yellow-500 text-2xl font-extrabold pointer-events-none select-none"
+            >
+              +{coinEffect.value}
+            </motion.span>
+          )}
+
+          {/* クリックボタン */}
           <Button
-            className="
-              text-7xl
-              px-24 py-16
-              font-extrabold tracking-wide
-              bg-linear-to-r from-pink-500 to-yellow-500
-              text-white shadow-2xl
-              hover:scale-110 hover:shadow-pink-500/70
-              transition
-              rounded-3xl
-              leading-none
-              mx-auto
-            "
-            onClick={handleClick}
+            className="text-7xl px-24 py-16 font-extrabold tracking-wide bg-linear-to-r from-pink-500 to-yellow-500 text-white shadow-2xl hover:scale-110 transition rounded-3xl leading-none mx-auto"
+            onClick={withClickSound(handleClick)}
           >
             クリック
           </Button>
         </div>
 
-        {/* メニュー */}
-        <div className="flex justify-center gap-4">
-          <Link href="../game/click/help">
-            <Button className="w-32 h-12 bg-gray-900 text-white font-bold shadow-[0_4px_0_#1f2937] active:shadow-none active:translate-y-1 transition">
-              説明書
-            </Button>
-          </Link>
-
-          <Link href="/game/click/shop">
-            <Button className="w-32 h-12 bg-gray-900 text-white font-bold shadow-[0_4px_0_#1f2937] active:shadow-none active:translate-y-1 transition">
-              ショップ
-            </Button>
-          </Link>
-
+        <div className="flex justify-center gap-4 !mb-6">
           <Button
-            onClick={changeBackground}
-            className="w-32 h-12 bg-gray-900 text-white font-bold shadow-[0_4px_0_#1f2937] active:shadow-none active:translate-y-1 transition"
+            onClick={withClickSound(changeBackground)}
+            className="w-32 h-12 bg-gray-400 text-white font-bold shadow-[0_4px_0_#1f2937] active:shadow-none active:translate-y-1 transition"
           >
-            背景変更
+            テーマ変更
           </Button>
         </div>
 
-        {/* コイン表示 */}
-        <div className="border p-4 rounded bg-white/70 backdrop-blur max-w-md mx-auto shadow">
-          <div className="flex justify-between items-end">
-            <p>
-              コイン: <span className="font-bold">{coins}</span>
-            </p>
+        <div className="text-center mb-4">
+          <p className="inline-flex items-center gap-2 px-4 py-2 bg-yellow-100 border border-yellow-300 rounded-full shadow text-yellow-800 text-sm font-bold ">
+            ⚜コイン:<span className="text-sm">{coins}</span>枚
+          </p>
+        </div>
 
-            <Button
-              size="sm"
-              onClick={playSound}
-              className="w-20 h-8 bg-red-600 text-white font-bold hover:scale-105 transition text-xs"
-            >
-              アイテム全使用
-            </Button>
+        {Object.keys(stockItems).length > 0 && (
+          <div className="border p-4 rounded bg-white/70 backdrop-blur max-w-md mx-auto shadow space-y-3 text-sm text-gray-800">
+            {/* 所持アイテム（ストック） */}
+            <div className="text-gray-700">
+              <p className="mb-4">🎒 所持アイテム:</p>
+              <ul className="space-y-1">
+                {sortedItems.map(([name, count]) => (
+                  <li key={name} className="flex items-center">
+                    <span className="text-sm">
+                      {name} ×{count}
+                    </span>
+                    <Button
+                      size="sm"
+                      onClick={withClickSound(() => handleUseItem(name))}
+                      className="ml-auto bg-indigo-500 text-white text-xs px-2 py-1 hover:scale-105 transition"
+                    >
+                      使用
+                    </Button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* 全使用ボタン */}
+            <div className="flex justify-end">
+              <Button
+                size="sm"
+                onClick={withClickSound(useAllItemsAllTypes)}
+                className="w-24 h-8 bg-red-600 text-white font-bold hover:scale-105 transition text-xs"
+              >
+                全使用
+              </Button>
+            </div>
+          </div>
+        )}
+
+        <div className="text-center mb-4">
+          <div className="inline-flex flex-col items-center gap-1 px-4 py-3 bg-purple-100 border border-purple-300 rounded-xl shadow text-purple-800 text-sm font-bold">
+            {/* 上：ガチャ料金 */}
+            <div>
+              🎡 ガチャ料金：
+              <span className="text-sm">
+                1回 500枚 / 10回 5000枚 / 100回 50000枚
+              </span>
+            </div>
+
+            {/* 下：排出アイテム */}
+            <div className="text-xs font-semibold text-purple-700">
+              📦 排出アイテム：💡ノーマル/ ✨レア/ 🎇ウルトラレア/ 🎆レジェンド
+            </div>
           </div>
         </div>
 
-        {/* ガチャボタン */}
-        <div className="grid grid-cols-3 gap-2 max-w-md mx-auto">
+        <div className="grid grid-cols-3 gap-2 max-w-md mx-auto !mb-4">
           <Button
             size="sm"
-            onClick={playSound}
-            className="bg-blue-500 text-white font-bold hover:scale-105 transition"
+            onClick={withClickSound(() => handleGacha(1))}
+            disabled={currentCoins < 500}
+            className={`
+    text-white font-bold hover:scale-105 transition
+    ${currentCoins < 500 ? "bg-gray-400 cursor-not-allowed" : "bg-blue-500"}
+  `}
           >
-            1連
-          </Button>
-          <Button
-            size="sm"
-            onClick={playSound}
-            className="text-white font-bold bg-linear-to-r from-green-400 to-blue-500 hover:scale-105 transition"
-          >
-            10連
-          </Button>
-          <Button
-            size="sm"
-            onClick={playSound}
-            className="text-white font-bold bg-linear-to-r from-yellow-400 via-orange-500 to-red-500 hover:scale-105 transition"
-          >
-            100連
-          </Button>
-          <Button
-            size="sm"
-            onClick={playSound}
-            className="text-white font-bold bg-linear-to-r from-purple-500 via-pink-500 to-orange-400 hover:scale-110 transition shadow-lg"
-          >
-            1000連
-          </Button>
-          <Button
-            size="sm"
-            onClick={playSound}
-            className="text-white font-bold bg-linear-to-r from-red-500 via-yellow-500 to-blue-500 bg-size-[200%_200%] animate-[gradient_3s_ease_infinite] hover:scale-110 transition shadow-xl"
-          >
-            10000連
+            1回：500枚
           </Button>
 
-          {coins >= 500000 && (
+          <Button
+            size="sm"
+            onClick={withClickSound(() => handleGacha(10))}
+            disabled={currentCoins < 5000}
+            className={`
+    text-white font-bold hover:scale-105 transition
+    ${
+      currentCoins < 5000
+        ? "bg-gray-400 cursor-not-allowed"
+        : "bg-gradient-to-r from-green-400 to-blue-500"
+    }
+  `}
+          >
+            10回：5000枚
+          </Button>
+
+          <Button
+            size="sm"
+            onClick={withClickSound(() => handleGacha(100))}
+            disabled={currentCoins < 50000}
+            className={`
+    text-white font-bold hover:scale-105 transition
+    ${
+      currentCoins < 50000
+        ? "bg-gray-400 cursor-not-allowed"
+        : "bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500"
+    }
+  `}
+          >
+            100回：50000枚
+          </Button>
+
+          {safeCoins >= 0 && (
             <Button
               size="sm"
-              onClick={handleClear}
-              className={`text-white font-extrabold bg-linear-to-r from-purple-600 via-pink-500 to-yellow-400 shadow-xl hover:scale-110 transition ${
-                coins < 1000000 ? "opacity-30" : "opacity-100"
-              }`}
-              disabled={coins < 1000000}
+              onClick={withClickSound(handleClear)}
+              className={`
+                col-span-3
+                text-white font-extrabold shadow-xl hover:scale-110 transition
+                ${
+                  safeCoins >= 100000
+                    ? "bg-[linear-gradient(90deg,red,#ff7f00,yellow,#00ff00,#00ffff,#0000ff,#8b00ff)]"
+                    : "bg-gray-600"
+                }
+              `}
+              style={{
+                opacity: Math.min(safeCoins / 100000, 1), // 0〜1 の範囲で濃くなる
+              }}
+              disabled={safeCoins < 100000}
             >
-              🎉 クリア！ 🎉
+              CLEAR
             </Button>
           )}
         </div>
+        <div className="text-center text-sm text-gray-700 mt-4 drop-shadow">
+          <MessageBox message={message} visible={visible} />
+        </div>
       </div>
+      {showClearButton && (
+        <div className="fixed inset-0 z-999 flex items-center justify-center">
+          {/* ← 背景を薄い灰色で覆うオーバーレイ */}
+          <div className="absolute inset-0 bg-gray-500/50 backdrop-blur-sm"></div>
 
-      <div className="text-center text-sm text-gray-700 mt-4 drop-shadow">
-        <MessageBox message={message} visible={visible} />
-      </div>
+          {/* ← ボタン本体（前面に表示） */}
+          <button
+            onClick={() => router.back()}
+            className="relative px-6 py-3 bg-blue-600 text-white font-bold rounded-lg shadow-lg hover:scale-105 transition"
+          >
+            ホーム画面
+          </button>
+        </div>
+      )}
     </main>
   );
 }
