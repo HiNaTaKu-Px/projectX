@@ -1,15 +1,14 @@
 "use client";
 
-import BgmPlayerClick from "@/components/sounds/BgmPlayerClick"; // ← クリックゲーム専用BGM！
 import { useState, useEffect, useRef } from "react";
 import MessageBox from "../../../components/MessageBox";
-import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
-import { CoinEffect } from "@/components/animation/CoinEffect";
-import { SuperFormalAnimation } from "@/components/animation/SuperFormalAnimation";
+import { ClearAnimation } from "@/components/animation/ClearAnimation";
 import GachaButton from "@/components/animation/GachaButton";
 import Header from "@/components/Header";
+import { CoinEffect, CoinEffectType } from "@/components/animation/CoinEffect";
+import { useAudioPlayer } from "@/hooks/useAudioPlayer";
 
 const SectionBox = ({ children }: { children: React.ReactNode }) => (
   <section className="w-full max-w-sm mx-auto pt-0 px-4 pb-2 border-2 border-blue-200 rounded-xl space-y-1">
@@ -42,15 +41,52 @@ export default function Home() {
     callback?.();
   };
 
+  const bgmRef = useRef<HTMLAudioElement | null>(null);
+
+  useEffect(() => {
+    const bgm = new Audio("/sounds/click/clickbgm.mp3");
+    bgm.loop = true;
+    bgm.volume = 0.5;
+    bgm.play();
+
+    bgmRef.current = bgm;
+
+    return () => {
+      bgm.pause();
+    };
+  }, []);
+
   // -----------------------------
   // UI States
   // -----------------------------
   const [message, setMessage] = useState("");
   const [visible, setVisible] = useState(false);
-  const [coinEffect, setCoinEffect] = useState<{
-    id: number;
-    value: number;
-  } | null>(null);
+  const [coinEffect, setCoinEffect] = useState<CoinEffectType>(null);
+
+  const effectIdRef = useRef(0);
+
+  const handleClick = () => {
+    const audio = new Audio("/sounds/coin.mp3");
+    audio.volume = 0.8;
+    audio.play();
+    const amount = getRandomAmount();
+
+    // ★ コインを増やす（null 対策つき）
+    setCoins((prev) => (prev ?? 0) + amount);
+
+    // ★ ランダム位置
+    const randomX = Math.random() * 100;
+    const randomY = Math.random() * 100;
+
+    // ★ エフェクト表示
+    setCoinEffect({
+      id: effectIdRef.current++,
+      value: amount,
+      x: randomX,
+      y: randomY,
+    });
+  };
+
   const [showSuperFormal, setShowSuperFormal] = useState(false);
   const [showClearButton, setShowClearButton] = useState(false);
 
@@ -84,7 +120,7 @@ export default function Home() {
     if (saved) {
       setCoins(JSON.parse(saved));
     } else {
-      setCoins(50000); // 初期値
+      setCoins(30000); // 初期値
     }
   }, []);
 
@@ -126,28 +162,6 @@ export default function Home() {
 
     animationRef.current = requestAnimationFrame(step);
   };
-
-  // -----------------------------
-  // Coin Effect
-  // -----------------------------
-
-  let effectId = 0;
-
-  const handleClick = () => {
-    const amount = getRandomAmount();
-
-    // prev が null の場合は 0 として扱う
-    setCoins((prev) => (prev ?? 0) + amount);
-
-    setCoinEffect({ id: effectId++, value: amount });
-  };
-
-  useEffect(() => {
-    if (!coinEffect) return;
-
-    const timeout = setTimeout(() => setCoinEffect(null), 800);
-    return () => clearTimeout(timeout);
-  }, [coinEffect]);
 
   // -----------------------------
   // Gacha
@@ -280,7 +294,20 @@ export default function Home() {
     showMessage("ゲームクリア！！");
     setShowSuperFormal(true);
 
+    // ★ アニメーション終了後に実行
     setTimeout(() => {
+      // ★ BGM を止める
+      if (bgmRef.current) {
+        bgmRef.current.pause();
+        bgmRef.current.currentTime = 0;
+      }
+
+      // ★ 勝利音を鳴らす
+      const audio = new Audio("/sounds/win.mp3");
+      audio.volume = 0.8;
+      audio.play();
+
+      // ★ アニメーション後の処理
       setShowSuperFormal(false);
       setShowClearButton(true);
     }, 1600);
@@ -292,30 +319,37 @@ export default function Home() {
         <div className=" bg-neutral-900 text-white">
           <Header />
         </div>
-        <BgmPlayerClick />
 
         <AnimatePresence mode="wait">
           {/* ゲームクリア演出 */}
-          {showSuperFormal && <SuperFormalAnimation key="super-formal" />}
+          {showSuperFormal && <ClearAnimation key="super-formal" />}
         </AnimatePresence>
 
-        <div className=" p-6 space-y-15">
-          <h1 className="mt-10 mb-8 w-full max-w-md mx-auto text-3xl font-bold text-center text-[#1f1f1f] bg-blue-50 px-6 py-6 rounded-md border-2 border-blue-300 shadow-[2px_2px_0_0_#90caf9] font-['VT323'] tracking-wide">
+        <div className="p-6 space-y-15">
+          <h1 className="mt-10 mb-14 w-full max-w-md mx-auto text-3xl font-bold text-center text-[#1f1f1f] bg-blue-50 px-2 py-2 rounded-md border-2 border-blue-300 shadow-[2px_2px_0_0_#90caf9] font-['VT323'] tracking-wide">
             クリックゲーム
           </h1>
 
           {/* クリックボタン + コインエフェクト */}
-          <div className="relative flex justify-center w-full ">
-            {/* コインエフェクト */}
-            <CoinEffect coinEffect={coinEffect} />
-
-            {/* クリックボタン */}
-            <Button
-              className="mt-4 text-3xl px-24 py-16 font-extrabold tracking-wide bg-linear-to-r from-pink-500 to-yellow-500 text-white shadow-2xl hover:scale-110 transition rounded-3xl leading-none mx-auto "
-              onClick={withClickSound(handleClick)}
+          <div className="relative text-center ">
+            <button
+              onClick={handleClick}
+              className="
+  px-20 py-10 bg-yellow-500 text-white text-3xl rounded-xl
+  shadow-[4px_4px_0_#d97706]
+  hover:translate-y-1 hover:shadow-[2px_2px_0_#d97706]
+  active:translate-y-2 active:shadow-[0px_0px_0_#d97706]
+  transition
+"
             >
               クリック
-            </Button>
+            </button>
+
+            {/* ボタンの外に CoinEffect を置く */}
+            <CoinEffect
+              coinEffect={coinEffect}
+              onFinish={() => setCoinEffect(null)}
+            />
           </div>
 
           <div className="text-center mb-4">
@@ -347,25 +381,23 @@ export default function Home() {
                     </span>
 
                     {/* 使用ボタン */}
-                    <Button
-                      size="sm"
+                    <button
                       onClick={withClickSound(() => handleUseItem(name))}
                       className="bg-indigo-500 text-white text-[10px] px-2 py-0.5 hover:scale-105 transition rounded"
                     >
                       使用
-                    </Button>
+                    </button>
                   </div>
                 ))}
               </div>
               {/* 全使用ボタン（中央） */}
               <div className="flex justify-center pt-2">
-                <Button
-                  size="sm"
+                <button
                   onClick={withClickSound(useAllItemsAllTypes)}
                   className="w-28 h-9 bg-red-600 text-white font-bold hover:scale-105 transition text-xs rounded"
                 >
                   全使用
-                </Button>
+                </button>
               </div>
             </div>
           )}
@@ -382,7 +414,7 @@ export default function Home() {
               </div>
 
               {/* 📦 排出アイテムタイトル */}
-              <div className="flex flex-col items-center w-full text-purple-700">
+              <div className="flex flex-col items-center w-full">
                 <span className="text-[11px] font-bold">📦 排出アイテム</span>
                 <div className="w-20 h-[1px] bg-purple-500 my-1" />
                 <span className="text-[10px] font-semibold">
@@ -395,51 +427,53 @@ export default function Home() {
           {/* ガチャボタン配置 */}
           <div className="text-[10px] px-6 grid grid-cols-3 gap-2 max-w-md mx-auto !mb-4">
             <GachaButton
+              soundSrc="/sounds/click/g1.mp3"
               cost={500 * 1}
               count={1}
               currentCoins={currentCoins}
               handleGacha={handleGacha}
-              withClickSound={withClickSound}
             />
 
             <GachaButton
+              soundSrc="/sounds/click/g2.mp3"
               cost={500 * 10}
               count={10}
               currentCoins={currentCoins}
               handleGacha={handleGacha}
-              withClickSound={withClickSound}
             />
 
             <GachaButton
+              soundSrc="/sounds/click/g3.mp3"
               cost={500 * 100}
               count={100}
               currentCoins={currentCoins}
               handleGacha={handleGacha}
-              withClickSound={withClickSound}
             />
 
             {safeCoins >= 0 && (
-              <Button
-                size="sm"
-                onClick={withClickSound(handleClear)}
+              <button
+                onClick={() => {
+                  new Audio("/sounds/clear.mp3").play();
+                  handleClear(); // ← これがちゃんと動くようになる
+                }}
                 className={`
-    col-span-3
-    py-10 px-10
-    text-white text-xl font-extrabold
-    shadow-xl hover:scale-110 transition
-    ${
-      safeCoins >= 100000
-        ? "bg-[linear-gradient(90deg,red,#ff7f00,yellow,#00ff00,#00ffff,#0000ff,#8b00ff)]"
-        : "bg-gray-600"
-    }
-  `}
+      col-span-3
+      py-10 px-10
+      text-white text-xl font-extrabold
+      shadow-xl hover:scale-110 transition
+      ${
+        safeCoins >= 100000
+          ? "bg-[linear-gradient(90deg,red,#ff7f00,yellow,#00ff00,#00ffff,#0000ff,#8b00ff)]"
+          : "bg-gray-600"
+      }
+    `}
                 style={{
                   opacity: Math.min(safeCoins / 100000, 1),
                 }}
                 disabled={safeCoins < 100000}
               >
                 CLEAR
-              </Button>
+              </button>
             )}
           </div>
           <div className="text-center text-xs text-gray-700 mt-4 drop-shadow">
@@ -447,13 +481,15 @@ export default function Home() {
           </div>
         </div>
         {showClearButton && (
-          <div className="fixed inset-0 z-999 flex items-center justify-center">
-            {/* ← 背景を薄い灰色で覆うオーバーレイ */}
+          <div className="fixed inset-0 z-999 flex flex-col items-center justify-center">
+            {/* 背景オーバーレイ */}
             <div className="absolute inset-0 bg-gray-500/50 backdrop-blur-sm"></div>
+            {/* ホーム画面ボタン */}
 
-            {/* ← ボタン本体（前面に表示） */}
             <button
-              onClick={() => router.back()}
+              onClick={() => {
+                router.back();
+              }}
               className="relative px-6 py-3 bg-blue-600 text-white font-bold rounded-lg shadow-lg hover:scale-105 transition"
             >
               ホーム画面

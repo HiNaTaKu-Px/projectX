@@ -8,7 +8,7 @@ type Props = {
   count: number;
   currentCoins: number;
   handleGacha: (count: number) => void;
-  withClickSound: (fn: () => void) => () => void;
+  soundSrc: string;
 };
 
 export default function GachaButton({
@@ -16,7 +16,7 @@ export default function GachaButton({
   count,
   currentCoins,
   handleGacha,
-  withClickSound,
+  soundSrc,
 }: Props) {
   const [stage, setStage] = useState(0);
 
@@ -73,10 +73,22 @@ export default function GachaButton({
   const handleClick = () => {
     if (currentCoins < cost) return;
 
-    withClickSound(() => handleGacha(count))();
+    // ★ 押した瞬間に音を鳴らす
+    const audio = new Audio(soundSrc);
+    audio.volume = 0.8;
+    audio.play();
 
+    // ガチャ実行
+    handleGacha(count);
+
+    // アニメーション開始
     setStage(1);
-    setTimeout(() => setStage(0), level === 1 ? 300 : level === 2 ? 600 : 800);
+
+    // アニメーション終了後に戻す
+    const delay = level === 1 ? 300 : level === 2 ? 600 : 800;
+    setTimeout(() => {
+      setStage(0);
+    }, delay);
   };
 
   const currentAnim =
@@ -98,9 +110,7 @@ export default function GachaButton({
         text-white font-bold px-4 py-2 rounded select-none flex flex-col items-center justify-center text-xs
         ${currentCoins < cost ? "bg-gray-400 cursor-not-allowed" : colorClass}
       `}
-      style={{ transform: "translateY(0px)" }}
     >
-      {/* シャイン */}
       <motion.div
         initial={{ x: "-200%", opacity: 0 }}
         animate={
@@ -110,7 +120,6 @@ export default function GachaButton({
         className="absolute top-0 left-0 w-full h-full bg-white/40 skew-x-12 pointer-events-none"
       />
 
-      {/* 表示テキスト */}
       <span>{count}回</span>
       <hr className="w-10 border-white/50 my-1" />
       <span>{cost}枚</span>
