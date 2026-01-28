@@ -1,16 +1,12 @@
 "use client";
 
-import { useRef, useState } from "react";
-import { motion } from "framer-motion";
-import TournamentBracket from "./components/TournamentBracket";
+import { useRef, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 
 const hands = ["✊", "✌️", "🖐️"];
-const cpuNames = ["CPU-A", "CPU-C", "CPU-F"];
-const roundNames = ["一回戦", "二回戦", "決勝戦"];
 
 export default function JankenPage() {
-  <main className="relative min-h-screen overflow-hidden text-gray-800"></main>;
-  const bgmRef = useRef<HTMLAudioElement | null>(null);
+  const router = useRouter();
 
   const [playerWin, setPlayerWin] = useState(0);
   const [cpuWin, setCpuWin] = useState(0);
@@ -19,12 +15,38 @@ export default function JankenPage() {
   const [gameOver, setGameOver] = useState(false);
   const [tournamentWin, setTournamentWin] = useState(false);
   const [skillUsed, setSkillUsed] = useState(false);
+  const [isBlurred, setIsBlurred] = useState(false);
+  const [endMessage, setEndMessage] = useState("");
 
-  const startBgm = () => {
-    if (!bgmRef.current) {
-      bgmRef.current = playJankenBgm();
+  const bgmRef = useRef<HTMLAudioElement | null>(null);
+
+  useEffect(() => {
+    const bgm = new Audio("/sounds/click/clickbgm.mp3");
+    bgm.loop = true;
+    bgm.volume = 0.5;
+    bgm.play().catch(() => {});
+    bgmRef.current = bgm;
+
+    return () => {
+      if (bgmRef.current && !bgmRef.current.paused) {
+        bgmRef.current.pause();
+      }
+    };
+  }, []);
+
+  // 勝敗がついたらモザイク
+  useEffect(() => {
+    if (playerWin === 3) {
+      setResultText("あなたの勝ち！");
+      setEndMessage("🎉 やったね！勝利！");
+      setIsBlurred(true);
     }
-  };
+    if (cpuWin === 3) {
+      setResultText("CPUの勝ち…");
+      setEndMessage("😢 ざんねん…また挑戦してね");
+      setIsBlurred(true);
+    }
+  }, [playerWin, cpuWin]);
 
   const judge = (p: string, c: string) => {
     if (p === c) return "あいこ";
@@ -38,52 +60,25 @@ export default function JankenPage() {
   };
 
   const play = (player: string) => {
+    if (gameOver || isBlurred) return;
+
     const cpu = hands[Math.floor(Math.random() * 3)];
     const result = judge(player, cpu);
     setResultText(`${player} ${result} ${cpu}`);
 
     if (result === "勝ち") {
-      const next = playerWin + 1;
-      setPlayerWin(next);
-      if (next >= 3) {
-        const nextStage = currentStage + 1;
-        if (nextStage >= 3) {
-          setTournamentWin(true);
-          setGameOver(true);
-        } else {
-          setCurrentStage(nextStage);
-          setPlayerWin(0);
-          setCpuWin(0);
-        }
-      }
+      setPlayerWin((prev) => prev + 1);
     } else if (result === "負け") {
-      const next = cpuWin + 1;
-      setCpuWin(next);
-      if (next >= 3) {
-        setGameOver(true);
-      }
+      setCpuWin((prev) => prev + 1);
     }
   };
 
   const useSkill = () => {
-    if (skillUsed || gameOver) return;
+    if (skillUsed || gameOver || isBlurred) return;
+
     setSkillUsed(true);
     setResultText("必殺技!! 勝ち！");
-    setPlayerWin((prev) => {
-      const next = prev + 1;
-      if (next >= 3) {
-        const nextStage = currentStage + 1;
-        if (nextStage >= 3) {
-          setTournamentWin(true);
-          setGameOver(true);
-        } else {
-          setCurrentStage(nextStage);
-          setPlayerWin(0);
-          setCpuWin(0);
-        }
-      }
-      return next;
-    });
+    setPlayerWin((prev) => prev + 1);
   };
 
   const reset = () => {
@@ -94,82 +89,106 @@ export default function JankenPage() {
     setGameOver(false);
     setTournamentWin(false);
     setSkillUsed(false);
+    setIsBlurred(false);
+    setEndMessage(""); // ← これでOK
   };
 
   return (
-    <main className="min-h-screen bg-linear-to-b from-blue-100 to-blue-200 text-center p-6">
-      <h1 className="text-3xl font-bold mb-4">じゃんけんトーナメント</h1>
+    <div className="relative">
+      {/* ゲーム画面（blur対象） */}
+      <main
+        className={`mt-4 w-full max-w-none p-6 sm:p-10 border-4 border-yellow-400 rounded-2xl shadow-2xl bg-gradient-to-b from-blue-900 to-black text-white font-mono transition ${
+          isBlurred ? "blur-sm" : ""
+        }`}
+      >
+        <h1 className="text-3xl font-bold text-center mb-4 drop-shadow">
+          じゃんけんゲーム
+        </h1>
+        <div className="text-center mb-4 text-lg font-bold">
+          <p className="text-xl mb-4">一回戦: CPU-A</p>
 
-      {!gameOver && (
-        <>
-          <p className="text-lg mb-2">
-            {roundNames[currentStage]}：{cpuNames[currentStage]}
-          </p>
-          <div className="flex justify-center gap-4 mb-4">
-            {hands.map((hand) => (
-              <button
-                key={hand}
-                onClick={() => play(hand)}
-                className="text-4xl px-4 py-2 bg-white rounded shadow hover:scale-110 transition"
-              >
-                {hand}
-              </button>
-            ))}
+          {/* ★ 左右に並べるコンテナ */}
+          <div className="flex justify-between px-6">
+            {/* あなた（左） */}
+            <div className="flex items-center gap-2">
+              <span className="text-xl">あなた:</span>
+              {[0, 1, 2].map((i) => (
+                <span key={i} className="text-yellow-300 text-2xl">
+                  {i < playerWin ? "★" : "☆"}
+                </span>
+              ))}
+            </div>
+
+            {/* CPU（右） */}
+            <div className="flex items-center gap-2">
+              <span className="text-xl">CPU:</span>
+              {[0, 1, 2].map((i) => (
+                <span key={i} className="text-yellow-300 text-2xl">
+                  {i < cpuWin ? "★" : "☆"}
+                </span>
+              ))}
+            </div>
           </div>
-          <p className="text-xl font-bold text-blue-800">{resultText}</p>
-          <div className="mt-4 text-sm text-gray-700">
-            <p>
-              あなた：{"★".repeat(playerWin)}
-              {"☆".repeat(3 - playerWin)}
-            </p>
-            <p>
-              CPU：{"★".repeat(cpuWin)}
-              {"☆".repeat(3 - cpuWin)}
-            </p>
-          </div>
-
-          <button
-            onClick={useSkill}
-            className={`mt-6 px-6 py-2 rounded shadow text-white font-bold transition ${
-              skillUsed
-                ? "bg-gray-400 cursor-not-allowed"
-                : "bg-yellow-500 hover:scale-105"
-            }`}
-          >
-            必殺技
-          </button>
-        </>
-      )}
-
-      {tournamentWin && (
-        <motion.div
-          initial={{ scale: 0, y: 100 }}
-          animate={{ scale: 1.2, y: 0 }}
-          transition={{ type: "spring", stiffness: 300 }}
-          className="text-3xl font-bold text-yellow-500 mt-6"
-        >
-          🏆 優勝！おめでとう！
-        </motion.div>
-      )}
-
-      {gameOver && (
-        <div className="mt-8">
-          <p className="text-2xl font-bold mb-4">
-            {tournamentWin ? "優勝！おめでとう！" : "敗退… また挑戦しよう！"}
+          <p className="text-center text-xl mb-4 h-8 flex items-center justify-center">
+            {resultText}
           </p>
-          <button
-            onClick={reset}
-            className="px-6 py-2 bg-red-500 text-white rounded shadow hover:scale-105 transition"
-          >
-            リセット
-          </button>
+
+          <div className="flex justify-center items-center gap-10 mt-6 mb-6 ml-[-140px]">
+            <button
+              onClick={useSkill}
+              disabled={skillUsed}
+              className=" px-6 py-3 rounded-xl font-bold border-4 
+      bg-yellow-300 border-yellow-500 text-black hover:scale-105 transition"
+            >
+              必殺技
+            </button>
+
+            <div className="flex gap-10">
+              {hands.map((h) => (
+                <button
+                  key={h}
+                  onClick={() => play(h)}
+                  className="
+        text-5xl p-6 rounded-full transition transform hover:scale-125
+        bg-black text-cyan-300 border-2 border-cyan-500
+        shadow-[0_0_10px_#00eaff,0_0_20px_#00eaff,0_0_40px_#00eaff]
+        hover:shadow-[0_0_15px_#00eaff,0_0_30px_#00eaff,0_0_60px_#00eaff]
+      "
+                >
+                  {h}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      </main>
+
+      {/* ★ モザイク中だけ表示される（blurの外） */}
+      {isBlurred && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-6 pointer-events-auto">
+          {/* 勝敗メッセージ（上に表示） */}
+          <p className="text-3xl font-bold text-white drop-shadow mb-4">
+            {endMessage}
+          </p>
+
+          {/* ボタンを横並びにする */}
+          <div className="flex flex-row gap-6">
+            <button
+              onClick={() => router.push("/")}
+              className="px-7 py-3 bg-green-400 rounded-xl font-bold hover:scale-105 transition"
+            >
+              ホーム
+            </button>
+
+            <button
+              onClick={reset}
+              className="px-6 py-3 bg-pink-300 rounded-xl font-bold text-black hover:scale-105 transition"
+            >
+              リセット
+            </button>
+          </div>
         </div>
       )}
-
-      <TournamentBracket currentStage={currentStage} />
-    </main>
+    </div>
   );
-}
-function playJankenBgm(): HTMLAudioElement | null {
-  throw new Error("Function not implemented.");
 }

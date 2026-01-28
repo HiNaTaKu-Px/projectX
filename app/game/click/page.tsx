@@ -350,39 +350,37 @@ export default function Home() {
           </p>
         </div>
 
-        {Object.keys(stockItems).length > 0 && (
-          <div className="mb-4 border p-3 rounded bg-white/70 backdrop-blur max-w-sm mx-auto shadow space-y-4 text-gray-800">
-            <div className="text-center mb-2">
-              <div className="inline-block">
-                <p className="font-bold text-sm inline-block">
-                  🎒 所持アイテム
-                </p>
-                <div className="h-[1px] bg-gray-500/50 mt-1" />
-              </div>
+        <div className="mb-4 border p-3 rounded bg-white/70 backdrop-blur max-w-sm mx-auto shadow space-y-4 text-gray-800 min-h-60">
+          <div className="text-center mb-2">
+            <div className="inline-block">
+              <p className="font-bold text-sm inline-block">🎒 所持アイテム</p>
+              <div className="h-[1px] bg-gray-500/50 mt-1" />
             </div>
-            {/* 横並びグリッド */}
-            <div className="grid grid-cols-2 gap-2">
-              {sortedItems.map(([name, count]) => (
-                <div
-                  key={name}
-                  className="flex flex-col items-center p-1 bg-white rounded shadow-sm"
-                >
-                  {/* アイテム名 */}
-                  <span className="text-xs mb-1">
-                    {name} ×{count}
-                  </span>
+          </div>
+          {/* 横並びグリッド */}
+          <div className="grid grid-cols-2 gap-2">
+            {sortedItems.map(([name, count]) => (
+              <div
+                key={name}
+                className="flex flex-col items-center p-1 bg-white rounded shadow-sm"
+              >
+                {/* アイテム名 */}
+                <span className="text-xs mb-1">
+                  {name} ×{count}
+                </span>
 
-                  {/* 使用ボタン */}
-                  <button
-                    onClick={withClickSound(() => handleUseItem(name))}
-                    className="bg-indigo-500 text-white text-[10px] px-2 py-0.5 hover:scale-105 transition rounded"
-                  >
-                    使用
-                  </button>
-                </div>
-              ))}
-            </div>
-            {/* 全使用ボタン（中央） */}
+                {/* 使用ボタン */}
+                <button
+                  onClick={withClickSound(() => handleUseItem(name))}
+                  className="bg-indigo-500 text-white text-[10px] px-2 py-0.5 hover:scale-105 transition rounded"
+                >
+                  使用
+                </button>
+              </div>
+            ))}
+          </div>
+          {/* 全使用ボタン（中央） */}
+          {sortedItems.length > 0 && (
             <div className="flex justify-center pt-2">
               <button
                 onClick={withClickSound(useAllItemsAllTypes)}
@@ -391,8 +389,8 @@ export default function Home() {
                 全使用
               </button>
             </div>
-          </div>
-        )}
+          )}
+        </div>
 
         <div className="text-center mb-4">
           <div className="inline-flex flex-col items-center gap-2 px-6 py-4 bg-purple-100 border border-purple-300 rounded-xl shadow text-purple-800 text-[10px] font-bold w-full max-w-sm">

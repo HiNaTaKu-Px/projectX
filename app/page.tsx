@@ -35,17 +35,31 @@ export default function Home() {
           <SectionBox>
             <h1 className="text-3xl font-extrabold text-center mb-6">
               ゲーム選択
-              <hr className="border-t-2 border-gray-800  mx-auto mt-0.5" />{" "}
-              <hr className="border-t-2 border-gray-800  mx-auto mt-0.5" />
+              <hr className="border-t-2 border-gray-800 mx-auto mt-0.5" />
+              <hr className="border-t-2 border-gray-800 mx-auto mt-0.5" />
             </h1>
-            <div className="flex space-x-6">
-              <button className="text-2xl px-3 py-8 bg-blue-600 text-white font-bold rounded-xl shadow-lg hover:scale-110 hover:shadow-2xl transition transform">
+
+            {/* スマホ：2×2 グリッド / PC：横並び */}
+            <div
+              className="
+      grid grid-cols-2 gap-4
+      md:flex md:space-x-6 md:gap-0
+    "
+            >
+              <button className="text-1xl px-4 py-6 bg-blue-600 text-white font-bold rounded-xl shadow-lg hover:scale-110 hover:shadow-2xl transition transform">
                 <Link href="/game/click">クリック</Link>
               </button>
 
-              <button className="text-2xl  bg-pink-600 text-white font-bold rounded-xl shadow-lg hover:scale-110 hover:shadow-2xl transition transform">
+              <button className="text-1xl px-4 py-6 bg-pink-600 text-white font-bold rounded-xl shadow-lg hover:scale-110 hover:shadow-2xl transition transform">
                 <Link href="/game/janken">じゃんけん</Link>
               </button>
+
+              <button className="text-1xl px-4 py-6 bg-yellow-600 text-white font-bold rounded-xl shadow-lg hover:scale-110 hover:shadow-2xl transition transform">
+                <Link href="/game/hockey">ホッケー</Link>
+              </button>
+
+              {/* 空白 or 追加ゲーム用 */}
+              <div className="hidden md:block"></div>
             </div>
           </SectionBox>
 
@@ -74,7 +88,14 @@ export default function Home() {
                   <li>必殺技ボタンで1回だけ即勝利できます</li>
                   <li>トーナメント表や演出も楽しんでね！</li>
                 </ul>
-
+                <div>
+                  <h3 className="font-bold text-lg text-yellow-600">
+                    ▶ ホッケー ◀
+                  </h3>
+                  <ul className="list-disc ">
+                    <li>Coming soon</li>
+                  </ul>
+                </div>
                 <h3 className="font-bold text-lg text-red-600">▶ 共通 ◀</h3>
                 <ul className="list-disc">
                   <li>スクロールトップでホーム＆テーマボタン表示</li>
