@@ -10,14 +10,19 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const pathname = usePathname(); // ← 追加
-  const isHome = pathname === "/"; // ← ホーム判定
+  const pathname = usePathname();
+
+  const isHome = pathname === "/";
+  const isHockey = pathname.startsWith("/game/hockey"); // ← 追加
+  const isEscape = pathname.startsWith("/game/escape");
+
+  const hideHeader = isHome || isHockey || isEscape; // ← ここでまとめる
 
   const [showHeader, setShowHeader] = useState(false);
   const [lastScrollY, setLastScrollY] = useState(0);
 
   useEffect(() => {
-    if (isHome) return; // ← ホームではスクロール制御を無効化
+    if (hideHeader) return; // ← ホーム & ホッケーではスクロール制御を無効化
 
     const handleScroll = () => {
       const currentY = window.scrollY;
@@ -33,13 +38,13 @@ export default function RootLayout({
 
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
-  }, [lastScrollY, isHome]);
+  }, [lastScrollY, hideHeader]);
 
   return (
     <html lang="ja">
       <body>
-        {/* ホームではヘッダーを完全に非表示 */}
-        {!isHome && (
+        {/* ホーム & ホッケーではヘッダーを完全に非表示 */}
+        {!hideHeader && (
           <div
             className={`fixed top-0 left-0 right-0 z-50 transition-transform duration-300 ${
               showHeader ? "translate-y-0" : "-translate-y-full"
@@ -49,8 +54,8 @@ export default function RootLayout({
           </div>
         )}
 
-        {/* ホームでは余白を消す */}
-        <div className={isHome ? "" : "pt-16"}>{children}</div>
+        {/* ホーム & ホッケーでは余白を消す */}
+        <div className={hideHeader ? "" : "pt-16"}>{children}</div>
       </body>
     </html>
   );

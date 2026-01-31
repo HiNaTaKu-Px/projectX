@@ -39,7 +39,7 @@ export default function BracketUI({ show, currentStage }: Props) {
                       key={label}
                       className="flex flex-row items-center gap-8 min-h-[70px]"
                     >
-                      <div className="w-32 flex justify-center">
+                      <div className="w-auto flex justify-center">
                         {isActive && (
                           <motion.div
                             layoutId="player-badge"

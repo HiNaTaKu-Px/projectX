@@ -10,14 +10,33 @@ const hands = ["✊", "✌️", "🖐️"];
 export default function JankenPage() {
   const router = useRouter();
 
+  // ★ battleCount は不要なので削除
+  const [skillPoints, setSkillPoints] = useState(0); // スキルポイント
+
+  const useSkill = () => {
+    if (showBracketModal || resultState !== "none") return;
+
+    if (skillPoints < 5) {
+      setResultText("スキルポイントが足りません！");
+      return;
+    }
+
+    // ★ 5ポイント消費
+    setSkillPoints((prev) => prev - 5);
+
+    // ★ 毎回違うテキストにする（これが重要）
+    setResultText(`必殺技!! 勝ち！_${Date.now()}`);
+    setScrambled("必殺技!! 勝ち！");
+    // ★ 勝ち扱い
+    setWinner("player");
+  };
+
   const [playerWin, setPlayerWin] = useState(0);
   const [cpuWin, setCpuWin] = useState(0);
   const [currentStage, setCurrentStage] = useState(0);
 
   const [resultText, setResultText] = useState("");
   const [scrambled, setScrambled] = useState("");
-
-  const [skillUsed, setSkillUsed] = useState(false);
 
   const [showBracketModal, setShowBracketModal] = useState(false);
 
@@ -40,10 +59,8 @@ export default function JankenPage() {
 
   const [isAnimating, setIsAnimating] = useState(false);
 
-  // ★ 勝敗を保存するだけ（星は増やさない）
   const [winner, setWinner] = useState<"player" | "cpu" | "draw" | null>(null);
 
-  // BGM 再生（ゲーム中）
   const playBGM = () => {
     if (!bgmRef.current) {
       const bgm = new Audio("/sounds/click/clickbgm.mp3");
@@ -66,7 +83,6 @@ export default function JankenPage() {
     };
   }, []);
 
-  // ★ 勝ち/負け画面に入ったら BGM を止める
   useEffect(() => {
     if (resultState !== "none") {
       if (bgmRef.current) {
@@ -95,20 +111,14 @@ export default function JankenPage() {
 
     setResultText(`${player} ${result} ${cpu}`);
 
-    // ★ 勝敗は保存するだけ（星は増やさない）
     if (result === "勝ち") setWinner("player");
     else if (result === "負け") setWinner("cpu");
     else setWinner("draw");
+
+    // ★ じゃんけん1回ごとにスキルポイント +1
+    setSkillPoints((prev) => prev + 1);
   };
 
-  const useSkill = () => {
-    if (showBracketModal || resultState !== "none") return;
-
-    setResultText("必殺技!! 勝ち！");
-    setWinner("player"); // ★ 勝ち扱い
-  };
-
-  // ★ じゃん…けん…ぽん！演出
   useEffect(() => {
     if (!resultText) return;
 
@@ -127,13 +137,12 @@ export default function JankenPage() {
       const ponSE = new Audio("/sounds/janken/pon.mp3");
       ponSE.volume = 1.0;
       ponSE.play();
-      setScrambled(resultText); // ぽん！
+      setScrambled(resultText);
 
-      // ★ ここで初めて星を増やす
       if (winner === "player") setPlayerWin((prev) => prev + 1);
       if (winner === "cpu") setCpuWin((prev) => prev + 1);
 
-      setIsAnimating(false); // ← ここから他の処理が動く
+      setIsAnimating(false);
     }, 1000);
 
     return () => {
@@ -142,7 +151,6 @@ export default function JankenPage() {
     };
   }, [resultText]);
 
-  // ★ トーナメント進行（ぽん！の後だけ動く）
   useEffect(() => {
     if (isAnimating) return;
 
@@ -157,7 +165,6 @@ export default function JankenPage() {
     }
   }, [playerWin, isAnimating]);
 
-  // ★ 優勝処理（ぽん！の後だけ動く）
   useEffect(() => {
     if (isAnimating) return;
 
@@ -175,7 +182,6 @@ export default function JankenPage() {
     }
   }, [currentStage, isAnimating]);
 
-  // ★ CPU勝利（ぽん！の後だけ動く）
   useEffect(() => {
     if (isAnimating) return;
 
@@ -189,7 +195,6 @@ export default function JankenPage() {
     setPlayerWin(0);
     setCpuWin(0);
     setResultText("");
-    setSkillUsed(false);
   };
 
   const resetAll = () => {
@@ -197,7 +202,6 @@ export default function JankenPage() {
     setCpuWin(0);
     setCurrentStage(0);
     setResultText("");
-    setSkillUsed(false);
     setEndMessage("");
     setResultState("none");
     playBGM();
@@ -205,14 +209,12 @@ export default function JankenPage() {
 
   return (
     <div className="relative">
-      {/* ★ トーナメントモーダル */}
       <BracketUI show={showBracketModal} currentStage={currentStage} />
 
-      {/* ★ じゃんけん画面 */}
       <main
-        className={`mt-4 w-full p-6 border-4 border-pink-300 rounded-2xl 
+        className={`mt-4 w-full min-h-[100dvh] p-6 border-4 border-pink-300 rounded-2xl 
     bg-gradient-to-b ${stageBackgrounds[currentStage]} 
-    text-white font-mono min-h-[450px] ${
+    text-white font-mono ${
       resultState !== "none" ? "pointer-events-none" : ""
     }`}
       >
@@ -244,17 +246,25 @@ export default function JankenPage() {
           </div>
 
           <p className="text-center text-xl mb-4 h-8 flex items-center justify-center">
-            {scrambled}
+            {scrambled.replace(/_.+$/, "")}{" "}
           </p>
 
           <div className="flex gap-5 justify-center">
             {hands.map((h) => (
               <button
+                key={h}
+                disabled={isAnimating}
                 onClick={() => {
                   new Audio("/sounds/janken/pon.mp3").play();
                   play(h);
                 }}
-                className="text-6xl p-3 rounded-full bg-gray-800 border-2 border-pink-500 hover:scale-125 transition"
+                className={`text-6xl p-3 rounded-full border-2 transition
+    ${
+      isAnimating
+        ? "bg-gray-600 border-gray-400 opacity-50 cursor-not-allowed"
+        : "bg-gray-800 border-pink-500 hover:scale-125"
+    }
+  `}
               >
                 {h}
               </button>
@@ -263,22 +273,30 @@ export default function JankenPage() {
 
           <div className="flex justify-center items-center gap-10 mt-6 mb-6">
             <button
-              onClick={useSkill}
-              disabled={skillUsed}
-              className="px-6 py-3 rounded-xl font-bold bg-yellow-300 border-4 border-yellow-500 text-black hover:scale-105 transition"
+              onClick={() => {
+                new Audio("/sounds/janken/vvv.mp3").play(); // ★ ここで音を鳴らす
+                useSkill();
+              }}
+              disabled={skillPoints < 5 || isAnimating}
+              className={`px-6 py-3 rounded-xl font-bold border-4 transition
+    ${
+      skillPoints < 5 || isAnimating
+        ? "bg-gray-400 border-gray-500 text-gray-700"
+        : "bg-yellow-300 border-yellow-500 text-black hover:scale-105"
+    }
+  `}
             >
-              必殺技
+              必殺技<p>スキルポイント: {skillPoints}</p>
             </button>
           </div>
         </div>
       </main>
 
-      {/* ★ 勝ち/負け演出（共通） */}
       {resultState !== "none" && (
-        <div className="absolute inset-0 pointer-events-auto">
+        <div className="absolute inset-0 min-h-[100dvh] pointer-events-auto">
           <div className="absolute inset-0 backdrop-blur-md bg-black/30"></div>
 
-          <div className="relative z-10 flex flex-col items-center justify-center h-full gap-6">
+          <div className="relative z-10 flex flex-col items-center justify-center min-h-[100dvh] gap-6">
             {resultState === "win" && showClear && <ClearAnimation />}
 
             <p className="text-3xl font-bold text-white drop-shadow mb-4">

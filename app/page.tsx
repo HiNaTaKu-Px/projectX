@@ -58,6 +58,10 @@ export default function Home() {
                 <Link href="/game/hockey">ホッケー</Link>
               </button>
 
+              <button className="text-1xl px-4 py-6 bg-violet-500 text-white font-bold rounded-xl shadow-lg hover:scale-110 hover:shadow-2xl transition transform">
+                <Link href="/game/escape">逃げる</Link>
+              </button>
+
               {/* 空白 or 追加ゲーム用 */}
               <div className="hidden md:block"></div>
             </div>
@@ -68,7 +72,7 @@ export default function Home() {
             <h2 className="text-2xl font-bold text-center">📘 説明書</h2>
             <div className="text-left text-gray-700 space-y-4">
               <div>
-                <h3 className="font-bold text-lg text-blue-300">
+                <h3 className="font-bold text-lg text-blue-500">
                   ▶ クリック ◀
                 </h3>
                 <ul className="list-disc">
@@ -76,30 +80,37 @@ export default function Home() {
                   <li>ガチャでアイテムを入手</li>
                   <li>コインを貯めてゲームクリアをめざそう！</li>
                 </ul>
-              </div>
 
-              <div>
-                <h3 className="font-bold text-lg text-pink-600">
+                <h3 className="font-bold text-lg text-pink-500">
                   ▶ じゃんけん ◀
                 </h3>
                 <ul className="list-disc ">
-                  <li>CPUとじゃんけんで3勝すると勝ち上がります</li>
+                  <li>CPUとじゃんけんで3勝するとステージ突破！</li>
+                  <li>じゃんけん1回で1p獲得、5pで必殺技発動（必勝）！</li>
                   <li>3ステージ勝ち抜くと優勝！</li>
-                  <li>必殺技ボタンで1回だけ即勝利できます</li>
-                  <li>トーナメント表や演出も楽しんでね！</li>
                 </ul>
-                <div>
-                  <h3 className="font-bold text-lg text-yellow-600">
-                    ▶ ホッケー ◀
-                  </h3>
-                  <ul className="list-disc ">
-                    <li>Coming soon</li>
-                  </ul>
-                </div>
-                <h3 className="font-bold text-lg text-red-600">▶ 共通 ◀</h3>
+
+                <h3 className="font-bold text-lg text-yellow-500">
+                  ▶ ホッケー ◀
+                </h3>
+                <ul className="list-disc ">
+                  <li>ゴールさせないでゴールするんだ</li>
+                  <li>1回跳ね返すと1p獲得、5pで必殺技発動（高速ボール）！</li>
+                  <li>必殺技はタップで発動！</li>
+                </ul>
+
+                <h3 className="font-bold text-lg text-violet-500">
+                  ▶ 逃げる ◀
+                </h3>
+                <ul className="list-disc ">
+                  <li>とにかく逃げる</li>
+                </ul>
+
+                <h3 className="font-bold text-lg text-red-500">▶ 共通 ◀</h3>
                 <ul className="list-disc">
                   <li>スクロールトップでホーム＆テーマボタン表示</li>
                   <li>データ消去ボタンでゲーム初期化</li>
+                  <li>ホッケー＆逃げるゲームはヘッダーなし</li>
                 </ul>
               </div>
             </div>
