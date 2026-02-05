@@ -79,20 +79,20 @@ export default function Home() {
               <hr className="border-t-2 border-gray-800 mx-auto mt-0.5" />
             </h1>
 
-            <div className="grid grid-cols-2 gap-4 md:flex md:space-x-6 md:gap-0">
-              <button className="text-1xl px-4 py-6 bg-yellow-500 text-white font-bold rounded-xl shadow-lg hover:scale-110 hover:shadow-2xl transition transform">
+            <div className="grid grid-cols-2 gap-4">
+              <button className="w-full text-1xl px-4 py-6 bg-yellow-500 text-white font-bold rounded-xl shadow-lg hover:scale-110 hover:shadow-2xl transition transform">
                 <Link href="/game/click">クリック</Link>
               </button>
 
-              <button className="text-1xl px-4 py-6 bg-pink-500 text-white font-bold rounded-xl shadow-lg hover:scale-110 hover:shadow-2xl transition transform">
+              <button className="w-full text-1xl px-4 py-6 bg-pink-500 text-white font-bold rounded-xl shadow-lg hover:scale-110 hover:shadow-2xl transition transform">
                 <Link href="/game/janken">じゃんけん</Link>
               </button>
 
-              <button className="text-1xl px-4 py-6 bg-indigo-500 text-white font-bold rounded-xl shadow-lg hover:scale-110 hover:shadow-2xl transition transform">
+              <button className="w-full text-1xl px-4 py-6 bg-indigo-500 text-white font-bold rounded-xl shadow-lg hover:scale-110 hover:shadow-2xl transition transform">
                 <Link href="/game/hockey">ホッケー</Link>
               </button>
 
-              <button className="text-1xl px-4 py-6 bg-violet-500 text-white font-bold rounded-xl shadow-lg hover:scale-110 hover:shadow-2xl transition transform">
+              <button className="w-full text-1xl px-4 py-6 bg-violet-500 text-white font-bold rounded-xl shadow-lg hover:scale-110 hover:shadow-2xl transition transform">
                 <Link href="/game/escape">逃げる</Link>
               </button>
             </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
 
@@ -9,6 +9,10 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [popup, setPopup] = useState<"success" | "error" | null>(null);
   const router = useRouter();
+
+  useEffect(() => {
+    window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
+  }, []);
 
   const login = async () => {
     try {

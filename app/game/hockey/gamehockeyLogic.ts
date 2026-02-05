@@ -3,20 +3,19 @@ export class GameLogic {
   player = { x: 20, y: 0, w: 18, h: 80 };
   enemy = { x: 0, y: 0, w: 18, h: 80 };
 
-  onGoal: () => void;
+  onGoal: (type: "high" | "low") => void;
 
+  onHit: () => void;
+  onWallHit: () => void;
   width: number;
   height: number;
   isPortrait: boolean;
 
-  playerScore = 0;
-  enemyScore = 0;
+  reflectCount = 0;
+  maxReflectCount = 0;
 
   enemySpeed: number;
   speedMultiplier: number;
-
-  playerHits = 0;
-  superReady = false;
 
   constructor(
     width: number,
@@ -24,13 +23,16 @@ export class GameLogic {
     enemySpeed: number,
     speedMultiplier: number,
     isPortrait: boolean,
-    onGoal: () => void,
+    onGoal: (type: "high" | "low") => void,
+    onHit: () => void,
+    onWallHit: () => void,
   ) {
     this.width = width;
     this.height = height;
     this.isPortrait = isPortrait;
     this.onGoal = onGoal;
-
+    this.onHit = onHit;
+    this.onWallHit = onWallHit;
     const scale = this.height / 450;
 
     this.enemySpeed = enemySpeed * scale;
@@ -60,11 +62,15 @@ export class GameLogic {
       this.puck.vy =
         initial || lastWinner === "player" ? -baseSpeed : baseSpeed;
 
+      // ★ 画面サイズに応じて自動調整
+      const playerBottomOffset = this.height * 0.01; // 下から8%
+      const enemyTopOffset = this.height * 0.01; // 上から4%
+
       this.player.x = this.width / 2 - this.player.w / 2;
-      this.player.y = this.height - 100;
+      this.player.y = this.height - this.player.h - playerBottomOffset;
 
       this.enemy.x = this.width / 2 - this.enemy.w / 2;
-      this.enemy.y = 60;
+      this.enemy.y = enemyTopOffset;
     } else {
       if (this.player.w > this.player.h) {
         [this.player.w, this.player.h] = [this.player.h, this.player.w];
@@ -79,7 +85,7 @@ export class GameLogic {
       this.player.y = this.height / 2 - this.player.h / 2;
 
       this.enemy.x = this.width - 40 - this.enemy.w;
-      this.enemy.y = this.height / 2 - this.enemy.h / 2;
+      this.enemy.y = this.height / 2 - this.enemy.h / 2 - 40;
     }
   }
 
@@ -92,85 +98,133 @@ export class GameLogic {
     );
   }
 
-  update() {
+  update(): "reset" | undefined {
     const goalWidth = 20;
+    const MAX_SPEED = 14;
+
+    // ★ 自動調整オフセット
+    const sideOffset = this.width * 0.01; // 縦画面の左右
+    const bottomOffset = this.height * 0.01; // 横画面の下
 
     this.puck.x += this.puck.vx;
     this.puck.y += this.puck.vy;
 
+    // -------------------------
+    // ★ 壁反射（押し返しなし）
+    // -------------------------
     if (this.isPortrait) {
-      if (this.puck.x <= 0 || this.puck.x + this.puck.w >= this.width) {
+      // 縦画面：左右の壁
+      const leftLimit = sideOffset;
+      const rightLimit = this.width - this.puck.w - sideOffset;
+
+      if (this.puck.x <= leftLimit) {
+        this.puck.x = leftLimit;
         this.puck.vx *= -1;
+        this.onWallHit();
+      }
+      if (this.puck.x >= rightLimit) {
+        this.puck.x = rightLimit;
+        this.puck.vx *= -1;
+        this.onWallHit();
       }
     } else {
-      if (this.puck.y <= 0 || this.puck.y + this.puck.h >= this.height) {
+      // 横画面：上下の壁
+      if (this.puck.y <= 0) {
+        this.puck.y = 0;
         this.puck.vy *= -1;
+        this.onWallHit();
+      }
+
+      const bottomLimit = this.height - this.puck.h - bottomOffset;
+      if (this.puck.y >= bottomLimit) {
+        this.puck.y = bottomLimit;
+        this.puck.vy *= -1;
+        this.onWallHit();
       }
     }
 
-    // ★ ゴール判定（onGoal を呼ぶ）
+    // -------------------------
+    // ゴール判定
+    // -------------------------
+    // ★ ゴールラインを画面サイズに応じて自動調整
+    const goalZoneVertical = this.height * 0.01; // 縦画面：上下3%
+    const goalZoneHorizontal = this.width * 0.01; // 横画面：左右3%
+
     if (this.isPortrait) {
-      if (this.puck.y <= goalWidth) {
-        this.playerScore++;
-        this.onGoal();
-        this.resetRound(false, "player");
-        return;
+      // ★ 縦画面：上下ゴール
+      if (this.puck.y <= goalZoneVertical) {
+        const type = this.reflectCount >= 5 ? "high" : "low";
+        this.onGoal(type);
+        return "reset";
       }
-      if (this.puck.y + this.puck.h >= this.height - goalWidth) {
-        this.enemyScore++;
-        this.onGoal();
-        this.resetRound(false, "enemy");
-        return;
+      if (this.puck.y + this.puck.h >= this.height - goalZoneVertical) {
+        const type = this.reflectCount >= 5 ? "high" : "low";
+        this.onGoal(type);
+        return "reset";
       }
     } else {
-      if (this.puck.x <= goalWidth) {
-        this.enemyScore++;
-        this.onGoal();
-        this.resetRound(false, "enemy");
-        return;
+      // ★ 横画面：左右ゴール
+      if (this.puck.x <= goalZoneHorizontal) {
+        const type = this.reflectCount >= 5 ? "high" : "low";
+        this.onGoal(type);
+        return "reset";
       }
-      if (this.puck.x + this.puck.w >= this.width - goalWidth) {
-        this.playerScore++;
-        this.onGoal();
-        this.resetRound(false, "player");
-        return;
+      if (this.puck.x + this.puck.w >= this.width - goalZoneHorizontal) {
+        const type = this.reflectCount >= 5 ? "high" : "low";
+        this.onGoal(type);
+        return "reset";
       }
     }
 
-    if (this.playerScore >= 5) return "win";
-    if (this.enemyScore >= 5) return "lose";
-
+    // -------------------------
+    // プレイヤー衝突
+    // -------------------------
     if (this.collide(this.puck, this.player)) {
+      this.onHit();
+      this.reflectCount++;
+      this.maxReflectCount = Math.max(this.maxReflectCount, this.reflectCount);
+
       if (this.isPortrait) {
         const offset =
           this.puck.x + this.puck.w / 2 - (this.player.x + this.player.w / 2);
-        this.puck.vx = offset * 0.05;
+        this.puck.vx = Math.max(-MAX_SPEED, Math.min(offset * 0.05, MAX_SPEED));
         this.puck.vy = -Math.abs(this.puck.vy);
       } else {
         const offset =
           this.puck.y + this.puck.h / 2 - (this.player.y + this.player.h / 2);
-        this.puck.vy = offset * 0.05;
+        this.puck.vy = Math.max(-MAX_SPEED, Math.min(offset * 0.05, MAX_SPEED));
         this.puck.vx = Math.abs(this.puck.vx);
       }
-
-      this.playerHits++;
-      if (this.playerHits >= 5) this.superReady = true;
     }
 
+    // -------------------------
+    // 敵衝突
+    // -------------------------
     if (this.collide(this.puck, this.enemy)) {
+      this.onHit();
+      this.reflectCount++;
+      this.maxReflectCount = Math.max(this.maxReflectCount, this.reflectCount);
+
       if (this.isPortrait) {
         const offset =
           this.puck.x + this.puck.w / 2 - (this.enemy.x + this.enemy.w / 2);
-        this.puck.vx = offset * 0.05;
+        this.puck.vx = Math.max(-MAX_SPEED, Math.min(offset * 0.05, MAX_SPEED));
         this.puck.vy = Math.abs(this.puck.vy);
       } else {
         const offset =
           this.puck.y + this.puck.h / 2 - (this.enemy.y + this.enemy.h / 2);
-        this.puck.vy = offset * 0.05;
+        this.puck.vy = Math.max(-MAX_SPEED, Math.min(offset * 0.05, MAX_SPEED));
         this.puck.vx = -Math.abs(this.puck.vx);
       }
     }
 
+    // 速度制限
+    this.puck.vx = Math.max(-MAX_SPEED, Math.min(this.puck.vx, MAX_SPEED));
+    this.puck.vy = Math.max(-MAX_SPEED, Math.min(this.puck.vy, MAX_SPEED));
+
+    // -------------------------
+    // 敵AI
+    // -------------------------
     const puckCenter = this.isPortrait
       ? this.puck.x + this.puck.w / 2
       : this.puck.y + this.puck.h / 2;
@@ -187,24 +241,28 @@ export class GameLogic {
       else this.enemy.y -= this.enemySpeed;
     }
 
+    // -------------------------
+    // 壁制限（プレイヤー・CPU）
+    // -------------------------
     if (this.isPortrait) {
-      this.enemy.x = Math.max(
-        0,
-        Math.min(this.enemy.x, this.width - this.enemy.w),
-      );
+      const leftLimit = sideOffset;
+      const rightLimitPlayer = this.width - this.player.w - sideOffset;
+      const rightLimitEnemy = this.width - this.enemy.w - sideOffset;
+
       this.player.x = Math.max(
-        0,
-        Math.min(this.player.x, this.width - this.player.w),
+        leftLimit,
+        Math.min(this.player.x, rightLimitPlayer),
+      );
+      this.enemy.x = Math.max(
+        leftLimit,
+        Math.min(this.enemy.x, rightLimitEnemy),
       );
     } else {
-      this.enemy.y = Math.max(
-        0,
-        Math.min(this.enemy.y, this.height - this.enemy.h),
-      );
-      this.player.y = Math.max(
-        0,
-        Math.min(this.player.y, this.height - this.player.h),
-      );
+      const playerBottom = this.height - this.player.h - bottomOffset;
+      const enemyBottom = this.height - this.enemy.h - bottomOffset;
+
+      this.player.y = Math.max(0, Math.min(this.player.y, playerBottom));
+      this.enemy.y = Math.max(0, Math.min(this.enemy.y, enemyBottom));
     }
   }
 
@@ -214,13 +272,5 @@ export class GameLogic {
     } else {
       this.player.y = pos - this.player.h / 2;
     }
-  }
-
-  superShot() {
-    if (!this.superReady) return;
-    this.puck.vx *= 3;
-    this.puck.vy *= 3;
-    this.superReady = false;
-    this.playerHits = 0;
   }
 }

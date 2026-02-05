@@ -94,7 +94,7 @@ export default function JankenPage() {
 
   useEffect(() => {
     if (resultState === "lose") {
-      new Audio("/sounds/janken/lose.mp3").play();
+      new Audio("/sounds/lose.mp3").play();
     }
   }, [resultState]);
 
@@ -218,11 +218,10 @@ export default function JankenPage() {
       <BracketUI show={showBracketModal} currentStage={currentStage} />
 
       <main
-        className={`mt-4 w-full min-h-[100dvh] p-6 border-4 border-pink-300 rounded-2xl 
-    bg-gradient-to-b ${stageBackgrounds[currentStage]} 
-    text-white font-mono ${
-      resultState !== "none" ? "pointer-events-none" : ""
-    }`}
+        className={`w-full min-h-[100dvh] p-6 border-4 border-pink-300 rounded-2xl 
+  bg-gradient-to-b ${stageBackgrounds[currentStage]} 
+  text-white font-mono pt-[32px]
+  ${resultState !== "none" ? "pointer-events-none" : ""}`}
       >
         <h1 className="text-3xl font-bold text-center mb-4">
           じゃんけんゲーム
