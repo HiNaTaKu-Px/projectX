@@ -46,13 +46,6 @@ export default function Login() {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-green-50 relative">
-      <ul className="text-sm font-bold text-gray-600 mb-2 space-y-1 text-center">
-        <li>h@px.com / ps1</li>
-        <li>n@px.com / ps2</li>
-        <li>t@px.com / ps3</li>
-        <li>k@px.com / ps4</li>
-      </ul>
-
       <div className="bg-white p-10 rounded-2xl shadow-xl w-full max-w-md border border-green-200">
         <h1 className="text-3xl font-bold text-center text-green-700 mb-8 font-['VT323'] tracking-wide">
           ログイン
@@ -63,7 +56,7 @@ export default function Login() {
           placeholder="メールアドレス"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="w-full px-4 py-3 mb-4 border border-green-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400"
+          className="w-full px-4 py-3   border-green-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400"
         />
 
         <input

@@ -10,11 +10,7 @@ import { CoinEffect, CoinEffectType } from "@/components/animation/CoinEffect";
 
 export default function Home() {
   const router = useRouter();
-
-  // -----------------------------
   // Audio
-  // -----------------------------
-
   const clickPlayer = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
@@ -48,9 +44,7 @@ export default function Home() {
     };
   }, []);
 
-  // -----------------------------
   // UI States
-  // -----------------------------
   const [message, setMessage] = useState("");
   const [visible, setVisible] = useState(false);
   const [coinEffect, setCoinEffect] = useState<CoinEffectType>(null);
@@ -82,31 +76,25 @@ export default function Home() {
   const [showSuperFormal, setShowSuperFormal] = useState(false);
   const [showClearButton, setShowClearButton] = useState(false);
 
-  // -----------------------------
   // Game States
-  // -----------------------------
   const [coins, setCoins] = useState<number | null>(null);
   const [items, setItems] = useState<(string | null)[]>(Array(7).fill(null));
   const [stockItems, setStockItems] = useState<Record<string, number>>({});
   const safeCoins = coins ?? 0;
   const currentCoins = coins ?? 0;
 
-  // -----------------------------
   // Constants
-  // -----------------------------
-  const gachaItems = ["💡ノーマル", "✨レア", "🎇ウルトラレア", "🎆レジェンド"];
+  const gachaItems = ["💡ノーマル", "✨レア", "🎇ウルトラ", "🎆レジェンド"];
   const rarityOrder = [...gachaItems];
 
   const itemCoinValues: Record<string, number> = {
     "💡ノーマル": 100,
     "✨レア": 500,
-    "🎇ウルトラレア": 3000,
+    "🎇ウルトラ": 3000,
     "🎆レジェンド": 10000,
   };
 
-  // -----------------------------
   // LocalStorage
-  // -----------------------------
   useEffect(() => {
     const saved = localStorage.getItem("coins");
     if (saved) {
@@ -122,9 +110,7 @@ export default function Home() {
     }
   }, [coins]);
 
-  // -----------------------------
   // Message
-  // -----------------------------
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const animationRef = useRef<number | null>(null);
 
@@ -155,14 +141,12 @@ export default function Home() {
     animationRef.current = requestAnimationFrame(step);
   };
 
-  // -----------------------------
   // Gacha
-  // -----------------------------
   const getRandomItem = () => {
     const r = Math.random();
     if (r < 0.7) return "💡ノーマル";
     if (r < 0.9) return "✨レア";
-    if (r < 0.99) return "🎇ウルトラレア";
+    if (r < 0.99) return "🎇ウルトラ";
     return "🎆レジェンド";
   };
 
@@ -238,9 +222,7 @@ export default function Home() {
     scramble();
   };
 
-  // -----------------------------
   // アイテム使用
-  // -----------------------------
   const handleUseItem = (itemName: string) => {
     const count = stockItems[itemName] || 0;
     if (count <= 0) return;
@@ -279,9 +261,7 @@ export default function Home() {
     showMessage(`全アイテムを使用して +${totalCoins} コイン獲得！`);
   };
 
-  // -----------------------------
   // ゲームクリア
-  // -----------------------------
   const handleClear = () => {
     setShowSuperFormal(true);
 
@@ -306,19 +286,28 @@ export default function Home() {
 
   return (
     <div className="overflow-auto h-screen">
-      <main className="  w-full max-w-none p-4  border-4 border-yellow-300 rounded-2xl shadow-2xl">
+      <main
+        className="
+    w-full min-h-[100dvh]
+    max-w-none p-4
+    border-4 border-yellow-300 rounded-2xl shadow-2xl
+  "
+      >
         {" "}
         <AnimatePresence mode="wait">
-          {/* ゲームクリア演出 */}
           {showSuperFormal && <ClearAnimation key="super-formal" />}
         </AnimatePresence>
+        <div className="text-center mt-6 ">
+          <p className="inline-flex items-center gap-2 px-4 py-2 mb-4 bg-yellow-100 border border-yellow-300 rounded-full shadow text-yellow-800 text-xl font-bold ">
+            ⚜コイン:<span>{coins}</span>枚
+          </p>
+        </div>
         <div className="">
-          {/* クリックボタン + コインエフェクト */}
           <div className="relative text-center">
             <button
               onClick={handleClick}
               className="
-      mt-4 px-20 py-10 bg-yellow-500 text-white text-5xl rounded-xl
+       px-20 py-14 bg-yellow-500 text-white text-6xl rounded-xl
       shadow-[4px_4px_0_#d97706]
       hover:translate-y-1 hover:shadow-[2px_2px_0_#d97706]
       active:translate-y-2 active:shadow-[0px_0px_0_#d97706]
@@ -328,17 +317,10 @@ export default function Home() {
               クリック
             </button>
 
-            {/* CoinEffect をこの relative の中に置くことで範囲が限定される */}
             <CoinEffect
               coinEffect={coinEffect}
               onFinish={() => setCoinEffect(null)}
             />
-          </div>
-
-          <div className="text-center ">
-            <p className="inline-flex items-center gap-2 px-4 py-2 mb-4 bg-yellow-100 border border-yellow-300 rounded-full shadow text-yellow-800 text-xl font-bold ">
-              ⚜コイン:<span>{coins}</span>枚
-            </p>
           </div>
 
           <div className="mb-4 border p-3 rounded bg-white/70 backdrop-blur max-w-sm mx-auto shadow space-y-4 text-gray-800 min-h-60">
@@ -350,19 +332,16 @@ export default function Home() {
                 <div className="h-[1px] bg-gray-500/50 mt-1" />
               </div>
             </div>
-            {/* 横並びグリッド */}
             <div className="grid grid-cols-2 gap-2">
               {sortedItems.map(([name, count]) => (
                 <div
                   key={name}
                   className="flex flex-col items-center p-1 bg-white rounded shadow-sm"
                 >
-                  {/* アイテム名 */}
                   <span className="text-xs mb-1">
                     {name} ×{count}
                   </span>
 
-                  {/* 使用ボタン */}
                   <button
                     onClick={withClickSound(() => handleUseItem(name))}
                     className="bg-indigo-500 text-white text-[10px] px-2 py-0.5 hover:scale-105 transition rounded"
@@ -372,7 +351,6 @@ export default function Home() {
                 </div>
               ))}
             </div>
-            {/* 全使用ボタン（中央） */}
             {sortedItems.length > 0 && (
               <div className="flex justify-center pt-2">
                 <button
@@ -387,27 +365,16 @@ export default function Home() {
 
           <div className="text-center mb-4">
             <div className="inline-flex flex-col items-center gap-2 px-6 py-4 bg-purple-100 border border-purple-300 rounded-xl shadow text-purple-800 text-[10px] font-bold w-full max-w-sm">
-              {/* 🎡 ガチャ料金タイトル */}
-              <div className="flex flex-col items-center w-full">
-                <span className="text-[11px]">🎡 ガチャ料金</span>
-                <div className="w-20 h-[1px] bg-purple-500 my-1" />
-                <span className="text-[10px] font-semibold">
-                  1回 500枚 / 10回 5000枚 / 100回 50000枚
-                </span>
-              </div>
-
-              {/* 📦 排出アイテムタイトル */}
               <div className="flex flex-col items-center w-full">
                 <span className="text-[11px] font-bold">📦 排出アイテム</span>
                 <div className="w-20 h-[1px] bg-purple-500 my-1" />
                 <span className="text-[10px] font-semibold">
-                  💡ノーマル / ✨レア / 🎇ウルトラレア / 🎆レジェンド
+                  💡ノーマル / ✨レア / 🎇ウルトラ / 🎆レジェンド
                 </span>
               </div>
             </div>
           </div>
 
-          {/* ガチャボタン配置 */}
           <div className="text-[10px] px-6 grid grid-cols-3 gap-2 max-w-md mx-auto !mb-4">
             <GachaButton
               soundSrc="/sounds/click/g1.mp3"
@@ -437,11 +404,11 @@ export default function Home() {
               <button
                 onClick={() => {
                   new Audio("/sounds/clear.mp3").play();
-                  handleClear(); // ← これがちゃんと動くようになる
+                  handleClear();
                 }}
                 className={`
       col-span-3
-      py-10 px-10
+      py-5 px-5
       text-white text-xl font-extrabold
       shadow-xl hover:scale-110 transition
       ${
@@ -465,13 +432,10 @@ export default function Home() {
         </div>
         {showClearButton && (
           <div className="fixed inset-0 z-999 flex flex-col items-center justify-center">
-            {/* 背景オーバーレイ */}
             <div className="absolute inset-0 bg-gray-500/50 backdrop-blur-sm"></div>
-            {/* 表示したい文字 */}
             <div className="relative z-10 text-white text-3xl font-bold mb-4">
               ゲームクリア！
             </div>
-            {/* ホーム画面ボタン */}
             <button
               onClick={() => {
                 router.back();

@@ -4,9 +4,8 @@ import Link from "next/link";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
-// 共通の枠スタイルをまとめたコンポーネント
 const SectionBox = ({ children }: { children: React.ReactNode }) => (
-  <section className="w-full max-w-4xl mx-auto space-y-6 p-6 border-2 border-green-200 rounded-xl bg-gray-50">
+  <section className="w-full max-w-4xl mx-auto p-4 space-y-4 border-2 border-green-200 rounded-xl bg-gray-50 mb-2">
     {children}
   </section>
 );
@@ -14,39 +13,68 @@ const SectionBox = ({ children }: { children: React.ReactNode }) => (
 export default function Home() {
   const router = useRouter();
 
-  // 🔵 Supabase 自前ログイン方式（localStorage）
   const [user, setUser] = useState<any>(null);
+  const [modalType, setModalType] = useState<"reset" | "logout" | null>(null);
+  const [logoutSuccess, setLogoutSuccess] = useState(false);
 
   useEffect(() => {
     const stored = localStorage.getItem("user");
-    if (stored) {
-      setUser(JSON.parse(stored));
-    }
+    if (stored) setUser(JSON.parse(stored));
   }, []);
 
-  const [modalType, setModalType] = useState<"reset" | "logout" | null>(null);
-  const [logoutSuccess, setLogoutSuccess] = useState(false);
+  const games = [
+    {
+      key: "click",
+      label: "クリック",
+      href: "/game/click",
+      color: "bg-yellow-500",
+      desc: "押して、当てて、貯めて。",
+    },
+    {
+      key: "janken",
+      label: "ジャンケン",
+      href: "/game/janken",
+      color: "bg-pink-500",
+      desc: "勝ち進んで、優勝。",
+    },
+    {
+      key: "hockey",
+      label: "ホッケー",
+      href: "/game/hockey",
+      color: "bg-indigo-500",
+      desc: "自分を超えろ。",
+    },
+    {
+      key: "escape",
+      label: "エスケープ",
+      href: "/game/escape",
+      color: "bg-violet-500",
+      desc: "集めて逃げろ。",
+    },
+  ];
 
   return (
     <>
       <main
         className="
-          min-h-screen
-          w-screen
-          flex items-center justify-center
-          bg-gray-100
-          p-0
-          border-x-4 border-gray-300
-        "
+    min-h-screen w-screen flex items-center justify-center
+    bg-gray-100
+  "
       >
-        <div className="w-full max-w-none space-y-12 p-6 sm:p-10 border-4 border-green-300 rounded-2xl shadow-2xl bg-white">
+        <div
+          className="
+      w-full min-h-[100dvh]
+      max-w-none p-2
+      border-4 border-green-300 rounded-2xl shadow-2xl
+      bg-white space-y-2
+    "
+        >
           <div className="relative">
-            <h1 className="text-4xl font-bold text-center text-[#1f1f1f] bg-green-50 px-6 py-6 rounded-md border-2 border-green-300 shadow-[2px_2px_0_0_#90caf9] font-['VT323'] tracking-wide">
-              ホーム画面
+            <h1 className="text-5xl font-bold text-center text-[#1f1f1f] bg-green-50 px-6 py-6 rounded-md border-4 border-green-300 ">
+              メインメニュー
             </h1>
           </div>
 
-          {/* ログイン状態表示 */}
           <div className="w-full flex justify-center items-center gap-2">
             <p className="text-sm font-bold text-green-700 px-1">
               {user ? `⭕ : ${user.email}` : "❌ : ログインしていません"}
@@ -71,119 +99,56 @@ export default function Home() {
             )}
           </div>
 
-          {/* ゲーム選択 */}
+          {/* 🎮 ゲーム選択（カード型） */}
           <SectionBox>
-            <h1 className="text-3xl font-extrabold text-center mb-6">
+            <h1 className="text-3xl font-extrabold text-center mb-2">
               ゲーム選択
               <hr className="border-t-2 border-gray-800 mx-auto mt-0.5" />
               <hr className="border-t-2 border-gray-800 mx-auto mt-0.5" />
             </h1>
 
-            <div className="grid grid-cols-2 gap-4">
-              <button className="w-full text-1xl px-4 py-6 bg-yellow-500 text-white font-bold rounded-xl shadow-lg hover:scale-110 hover:shadow-2xl transition transform">
-                <Link href="/game/click">クリック</Link>
-              </button>
+            <div className="flex flex-col gap-2">
+              {games.map((g) => (
+                <div
+                  key={g.key}
+                  className="flex flex-col gap-2 p-4 border rounded-xl bg-white shadow"
+                >
+                  <button
+                    className={`w-full text-xl px-4 py-6 text-white font-bold rounded-xl shadow-lg hover:scale-105 hover:shadow-2xl transition transform ${g.color}`}
+                  >
+                    <Link href={g.href}>{g.label}</Link>
+                  </button>
 
-              <button className="w-full text-1xl px-4 py-6 bg-pink-500 text-white font-bold rounded-xl shadow-lg hover:scale-110 hover:shadow-2xl transition transform">
-                <Link href="/game/janken">じゃんけん</Link>
-              </button>
+                  <p className="text-sm text-gray-700">▶ {g.desc}</p>
+                </div>
+              ))}
 
-              <button className="w-full text-1xl px-4 py-6 bg-indigo-500 text-white font-bold rounded-xl shadow-lg hover:scale-110 hover:shadow-2xl transition transform">
-                <Link href="/game/hockey">ホッケー</Link>
-              </button>
+              {/* 共通 */}
+              <div className="flex flex-col gap-2 p-4 border rounded-xl bg-white shadow">
+                <div className="text-lg font-bold text-gray-700">共通</div>
 
-              <button className="w-full text-1xl px-4 py-6 bg-violet-500 text-white font-bold rounded-xl shadow-lg hover:scale-110 hover:shadow-2xl transition transform">
-                <Link href="/game/escape">逃げる</Link>
-              </button>
-            </div>
-          </SectionBox>
+                <p className="text-sm text-gray-700">
+                  ▶ データ消去ボタンでゲーム初期化
+                </p>
 
-          {/* 説明書 */}
-          <SectionBox>
-            <h2 className="text-2xl font-bold text-center">📘 説明書</h2>
-            <div className="text-left text-gray-700 space-y-4">
-              <div>
-                <h3 className="font-bold text-lg text-yellow-500">
-                  ▶ クリック ◀
-                </h3>
-                <ul className="list-disc">
-                  <li>クリックボタンを押すとコインゲット</li>
-                  <li>ガチャでアイテムを入手</li>
-                  <li>コインを貯めてゲームクリアをめざそう！</li>
-                </ul>
+                <button
+                  onClick={() => setModalType("reset")}
+                  className="px-3 py-2 bg-red-500 text-white font-bold rounded-md shadow hover:bg-red-700 transition"
+                >
+                  データ消去
+                </button>
 
-                <h3 className="font-bold text-lg text-pink-500">
-                  ▶ じゃんけん ◀
-                </h3>
-                <ul className="list-disc ">
-                  <li>CPUとじゃんけんで3勝するとステージ突破！</li>
-                  <li>じゃんけん1回で1p獲得、5pで必殺技発動（必勝）！</li>
-                  <li>3ステージ勝ち抜くと優勝！</li>
-                </ul>
-
-                <h3 className="font-bold text-lg text-indigo-500">
-                  ▶ ホッケー ◀
-                </h3>
-                <ul className="list-disc ">
-                  <li>ゴールさせないでゴールするんだ</li>
-                  <li>1回跳ね返すと1p獲得、5pで必殺技発動（高速ボール）！</li>
-                  <li>必殺技はタップで発動！</li>
-                </ul>
-
-                <h3 className="font-bold text-lg text-violet-500">
-                  ▶ 逃げる ◀
-                </h3>
-                <ul className="list-disc ">
-                  <li>とにかく逃げる</li>
-                </ul>
-
-                <h3 className="font-bold text-lg text-red-500">▶ 共通 ◀</h3>
-                <ul className="list-disc">
-                  <li>スクロールトップでホーム＆テーマボタン表示</li>
-                  <li>データ消去ボタンでゲーム初期化</li>
-                  <li>ホッケー＆逃げるゲームはヘッダーなし</li>
-                </ul>
+                {user && (
+                  <button
+                    onClick={() => setModalType("logout")}
+                    className="px-3 py-2 bg-red-500 text-white font-bold rounded-md shadow hover:bg-red-600 transition"
+                  >
+                    ログアウト
+                  </button>
+                )}
               </div>
             </div>
           </SectionBox>
-
-          {/* 制作理由 */}
-          <SectionBox>
-            <h2 className="text-2xl font-bold text-center">🎮 制作理由</h2>
-            <p className="text-gray-700 leading-relaxed text-left">
-              Next.js の構造理解と TSX
-              の習得を目的に、「自分が遊んでいて楽しいもの」をテーマに開発しました。
-            </p>
-            <p className="text-gray-700 leading-relaxed text-left">
-              また、Framer Motion や Tailwind CSS
-              などの外部ライブラリを活用し、表現力と開発効率を高めています。
-            </p>
-          </SectionBox>
-
-          {/* ボタン類 */}
-          <div className="flex justify-between items-center w-full">
-            <div className="w-1/3"></div>
-
-            <div className="w-1/3 flex justify-center">
-              <button
-                onClick={() => setModalType("reset")}
-                className="bg-red-500 text-white font-bold px-2 py-2 rounded-full shadow-md hover:bg-red-700 hover:scale-105 transition"
-              >
-                データ消去
-              </button>
-            </div>
-
-            <div className="w-1/3 flex justify-end">
-              {user && (
-                <button
-                  onClick={() => setModalType("logout")}
-                  className="bg-red-500 text-white font-bold px-2 py-2 rounded-full shadow-md hover:bg-gray-600 hover:scale-105 transition"
-                >
-                  ログアウト
-                </button>
-              )}
-            </div>
-          </div>
 
           {/* モーダル */}
           {modalType && (
@@ -201,7 +166,7 @@ export default function Home() {
                       if (modalType === "reset") {
                         localStorage.clear();
                         window.location.reload();
-                      } else if (modalType === "logout") {
+                      } else {
                         localStorage.removeItem("user");
                         setUser(null);
                         setModalType(null);

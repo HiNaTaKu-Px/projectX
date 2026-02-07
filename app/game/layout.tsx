@@ -12,7 +12,6 @@ export default function GameLayout({
   return (
     <html lang="ja">
       <body className="m-0 p-0 bg-white overflow-hidden">
-        {/* 薄い全幅黒ヘッダー */}
         <header
           className="fixed top-0 left-0 z-[9999] bg-black text-white 
              px-2 py-0.5  w-full"

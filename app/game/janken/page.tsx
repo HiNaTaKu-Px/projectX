@@ -221,14 +221,11 @@ export default function JankenPage() {
         className={`w-full min-h-[100dvh] p-6 border-4 border-pink-300 rounded-2xl 
   bg-gradient-to-b ${stageBackgrounds[currentStage]} 
   text-white font-mono pt-[32px]
+  flex flex-col justify-center items-center
   ${resultState !== "none" ? "pointer-events-none" : ""}`}
       >
-        <h1 className="text-3xl font-bold text-center mb-4">
-          じゃんけんゲーム
-        </h1>
-
         <div className="text-center mb-4 text-lg font-bold">
-          <p className="text-3xl mb-4">🤛{stageLabels[currentStage]}🤜</p>
+          <p className="text-3xl mb-2 ">🤛{stageLabels[currentStage]}🤜</p>
 
           <div className="flex justify-between px-2">
             <div className="flex">
@@ -250,11 +247,11 @@ export default function JankenPage() {
             </div>
           </div>
 
-          <p className="text-center text-xl mb-4 h-8 flex items-center justify-center">
+          <p className="text-center text-xl  h-8 flex items-center justify-center">
             {scrambled.replace(/_.+$/, "")}{" "}
           </p>
 
-          <div className="flex gap-5 justify-center">
+          <div className="flex gap-5 justify-center mt-4">
             {hands.map((h) => (
               <button
                 key={h}
@@ -276,7 +273,7 @@ export default function JankenPage() {
             ))}
           </div>
 
-          <div className="flex justify-center items-center gap-10 mt-6 mb-6">
+          <div className="flex justify-center items-center gap-10 mt-4">
             <button
               onClick={() => {
                 new Audio("/sounds/janken/vvv.mp3").play(); // ★ ここで音を鳴らす
