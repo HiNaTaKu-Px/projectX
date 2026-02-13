@@ -1,6 +1,8 @@
 "use client";
+
 import { useEffect, useRef, useState } from "react";
 import { GameLogic } from "./GameLogic";
+import { saveScoreAction } from "@/app/actions/saveScore"; // ★追加
 
 export function useHockeyGame() {
   const logicRef = useRef<GameLogic | null>(null);
@@ -45,7 +47,6 @@ export function useHockeyGame() {
     goalHighSE.current = new Audio("/sounds/win.mp3");
     goalLowSE.current = new Audio("/sounds/lose.mp3");
 
-    // 🔥 アンマウント時に完全停止
     return () => {
       [...hitPool.current, ...wallPool.current].forEach((a) => {
         a.pause();
@@ -102,8 +103,24 @@ export function useHockeyGame() {
     setStarted(true);
 
     const loop = () => {
-      const result = logicRef.current?.update();
+      const logic = logicRef.current;
+      if (!logic) return;
+
+      const result = logic.update();
       if (result === "reset") setShowReset(true);
+
+      // ★★★★★ 最大スコア更新 → DB 保存 ★★★★★
+      const current = logic.reflectCount;
+      if (current > logic.maxReflectCount) {
+        logic.maxReflectCount = current;
+
+        const token = localStorage.getItem("token");
+        const user = JSON.parse(localStorage.getItem("user") || "{}");
+
+        if (user?.id) {
+          saveScoreAction(user.id, "hockey", current);
+        }
+      }
 
       setTick((t) => t + 1);
       frameRef.current = requestAnimationFrame(loop);
@@ -175,15 +192,12 @@ export function useHockeyGame() {
     logic.movePlayer(pos);
   };
 
-  // 🔥 useHockeyGame がアンマウントされた時の完全クリーンアップ
+  // クリーンアップ
   useEffect(() => {
     return () => {
-      // requestAnimationFrame 停止
       if (frameRef.current !== null) {
         cancelAnimationFrame(frameRef.current);
       }
-
-      // GameLogic 停止
       logicRef.current = null;
     };
   }, []);

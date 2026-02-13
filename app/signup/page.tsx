@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { AuthService } from "@/lib/services/authService";
+import { registerAction } from "@/app/actions/register";
 
 import { AuthInput } from "@/components/auth/AuthInput";
 import { AuthButton } from "@/components/auth/AuthButton";
@@ -19,7 +19,8 @@ export default function RegisterPage() {
 
   async function handleRegister() {
     try {
-      const result = await AuthService.register(email, password);
+      // ★★★ FormData をやめて、普通に 2 引数で呼ぶ ★★★
+      const result = await registerAction(email, password);
 
       if (!result.ok) {
         if (result.error === "duplicate") {

@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { AuthService } from "@/lib/services/authService";
+import { loginAction } from "@/app/actions/login";
+
 import { AuthInput } from "@/components/auth/AuthInput";
 import { AuthButton } from "@/components/auth/AuthButton";
 import { Popup } from "@/components/auth/Popup";
@@ -15,14 +16,18 @@ export default function Login() {
   const router = useRouter();
 
   const login = async () => {
-    const result = await AuthService.login(email, password);
+    // ★★★ FormData をやめて、普通に 2 引数で呼ぶ ★★★
+    const result = await loginAction(email, password);
 
-    if (!result.ok) {
+    if (!result.ok || !result.token) {
       setPopup("error");
       return;
     }
 
+    // ★★★ userId を使うために user も保存する ★★★
     localStorage.setItem("token", result.token);
+    localStorage.setItem("user", JSON.stringify(result.user));
+
     setPopup("success");
 
     setTimeout(() => router.push("/"), 1200);

@@ -1,15 +1,17 @@
+// app/actions/saveScore.ts
+"use server";
+
 import { db } from "@/lib/db/db";
 import { scores } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 
-export async function POST(req: Request) {
-  const { userId, game, value } = await req.json();
+export async function saveScoreAction(
+  userId: number,
+  game: string,
+  value: number,
+) {
+  if (!userId || !game) return { ok: false };
 
-  if (!userId || !game) {
-    return Response.json({ ok: false });
-  }
-
-  // 既存スコアがあるか確認
   const existing = await db
     .select()
     .from(scores)
@@ -17,16 +19,10 @@ export async function POST(req: Request) {
     .limit(1);
 
   if (existing.length > 0) {
-    // 更新
     await db.update(scores).set({ value }).where(eq(scores.id, existing[0].id));
   } else {
-    // 新規
-    await db.insert(scores).values({
-      userId,
-      game,
-      value,
-    });
+    await db.insert(scores).values({ userId, game, value });
   }
 
-  return Response.json({ ok: true });
+  return { ok: true };
 }

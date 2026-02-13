@@ -1,5 +1,8 @@
 "use client";
+
 import { useEffect, useRef, useState } from "react";
+import { getScoresAction } from "@/app/actions/getScores";
+import { saveScoreAction } from "@/app/actions/saveScore";
 
 export function useEscapeGame() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -10,7 +13,6 @@ export function useEscapeGame() {
   const [gameOver, setGameOver] = useState(false);
 
   const loopRef = useRef<number | null>(null);
-
   const stick = useRef({ x: 0, y: 0 });
 
   const state = useRef({
@@ -39,34 +41,26 @@ export function useEscapeGame() {
     setGameOver(false);
   };
 
-  // スコア読み込み
+  // ★ スコア読み込み
   useEffect(() => {
-    const userId = Number(localStorage.getItem("userId"));
-    if (!userId) return;
+    const token = localStorage.getItem("token");
+    if (!token) return;
 
-    async function load() {
-      const res = await fetch(`/api/scores/get?userId=${userId}&game=escape`);
-      const data = await res.json();
-      setMaxScore(data.value ?? 0);
-    }
-
-    load();
+    getScoresAction(token).then((res) => {
+      if (res.ok) {
+        const escapeScore = res.scores.find((s: any) => s.game === "escape");
+        setMaxScore(escapeScore?.value ?? 0);
+      }
+    });
   }, []);
 
-  // スコア保存
+  // ★ スコア保存
   const saveMaxScore = async () => {
-    const userId = Number(localStorage.getItem("userId"));
+    const user = JSON.parse(localStorage.getItem("user") || "{}");
+    const userId = user?.id;
     if (!userId) return;
 
-    await fetch("/api/scores/save", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        userId,
-        game: "escape",
-        value: maxScore,
-      }),
-    });
+    await saveScoreAction(userId, "escape", maxScore);
   };
 
   // Canvas サイズ調整
@@ -85,7 +79,27 @@ export function useEscapeGame() {
     return () => window.removeEventListener("resize", resize);
   }, []);
 
-  // スティック操作
+  // ★★★★★ PC マウス操作を追加 ★★★★★
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!running || gameOver) return;
+
+      const rect = canvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+
+      state.current.player.x = x;
+      state.current.player.y = y;
+    };
+
+    window.addEventListener("mousemove", handleMouseMove);
+    return () => window.removeEventListener("mousemove", handleMouseMove);
+  }, [running, gameOver]);
+
+  // スティック操作（スマホ用）
   const handleStickMove = (e: any) => {
     const touch = e.touches[0];
     const area = (e.target as HTMLElement).getBoundingClientRect();
@@ -121,7 +135,7 @@ export function useEscapeGame() {
     }
   };
 
-  // ゲームループ
+  // ゲームループ（元のまま）
   useEffect(() => {
     if (!running) return;
 
@@ -140,17 +154,18 @@ export function useEscapeGame() {
       const speed = 4;
 
       if (!gameOver) {
-        // キーボード
+        // キーボード操作
         if (keys["ArrowLeft"]) s.player.x -= speed;
         if (keys["ArrowRight"]) s.player.x += speed;
         if (keys["ArrowUp"]) s.player.y -= speed;
         if (keys["ArrowDown"]) s.player.y += speed;
 
-        // スティック
+        // スティック操作（スマホ）
         const sensitivity = 1.0;
         s.player.x += stick.current.x * speed * sensitivity;
         s.player.y += stick.current.y * speed * sensitivity;
 
+        // 画面外に出ないように
         s.player.x = Math.max(0, Math.min(WIDTH, s.player.x));
         s.player.y = Math.max(0, Math.min(HEIGHT, s.player.y));
 

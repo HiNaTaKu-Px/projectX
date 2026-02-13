@@ -3,6 +3,9 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
+import { getUserAction } from "@/app/actions/getUser";
+import { getScoresAction } from "@/app/actions/getScores";
+
 import { SectionBox } from "@/components/home/SectionBox";
 import { ScoreModal } from "@/components/home/ScoreModal";
 import { ConfirmModal } from "@/components/home/ConfirmModal";
@@ -20,28 +23,26 @@ export default function Home() {
   const [logoutSuccess, setLogoutSuccess] = useState(false);
   const [scores, setScores] = useState<any[]>([]);
 
+  // ユーザー情報取得
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (!token) return;
 
-    fetch("/api/me", {
-      headers: { Authorization: "Bearer " + token },
-    })
-      .then((res) => res.json())
-      .then((data) => data?.id && setUser(data));
+    getUserAction(token).then((res) => {
+      if (res.ok) setUser(res.user);
+    });
   }, []);
 
+  // スコア取得
   useEffect(() => {
     if (!user) return;
 
     const token = localStorage.getItem("token");
     if (!token) return;
 
-    fetch("/api/scores/getall", {
-      headers: { Authorization: "Bearer " + token },
-    })
-      .then((res) => res.json())
-      .then((data) => setScores(data.scores || []));
+    getScoresAction(token).then((res) => {
+      if (res.ok) setScores(res.scores);
+    });
   }, [user]);
 
   const games = [

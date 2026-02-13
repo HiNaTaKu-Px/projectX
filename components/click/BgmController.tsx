@@ -9,8 +9,7 @@ export function BgmController({ src }: { src: string }) {
     const bgm = new Audio(src);
     bgm.loop = true;
     bgm.volume = 0.5;
-    bgm.play();
-
+    bgm.play().catch(() => {});
     bgmRef.current = bgm;
 
     return () => {

@@ -1,9 +1,14 @@
 "use client";
 
 export function ClickButton({ onClick }: { onClick: () => void }) {
+  const handleClick = () => {
+    new Audio("/sounds/click/coin.mp3").play().catch(() => {});
+    onClick();
+  };
+
   return (
     <button
-      onClick={onClick}
+      onClick={handleClick}
       className="
         px-20 py-25 bg-yellow-500 text-white text-6xl rounded-xl
         shadow-[4px_4px_0_#d97706]

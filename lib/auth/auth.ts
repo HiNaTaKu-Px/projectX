@@ -37,7 +37,6 @@ export async function registerUser(email: string, password: string) {
     user: {
       id: user[0].id,
       email: user[0].email,
-      coins: user[0].coins,
     },
   };
 }
@@ -69,7 +68,6 @@ export async function loginUser(email: string, password: string) {
     user: {
       id: user[0].id,
       email: user[0].email,
-      coins: user[0].coins,
     },
   };
 }

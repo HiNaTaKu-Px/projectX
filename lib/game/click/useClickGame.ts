@@ -13,7 +13,6 @@ export function useClickGame() {
   const [showClearButton, setShowClearButton] = useState(false);
 
   const effectIdRef = useRef(0);
-  const bgmRef = useRef<HTMLAudioElement | null>(null);
 
   // -----------------------------
   // 初期コイン読み込み
@@ -33,20 +32,7 @@ export function useClickGame() {
   }, [coins]);
 
   // -----------------------------
-  // BGM
-  // -----------------------------
-  useEffect(() => {
-    const bgm = new Audio("/sounds/click/clickbgm.mp3");
-    bgm.loop = true;
-    bgm.volume = 0.5;
-    bgm.play();
-    bgmRef.current = bgm;
-
-    return () => bgm.pause();
-  }, []);
-
-  // -----------------------------
-  // コインクリック
+  // コインクリック（音なし）
   // -----------------------------
   const getRandomAmount = () => {
     const r = Math.random();
@@ -57,18 +43,14 @@ export function useClickGame() {
   };
 
   const handleClick = () => {
-    const audio = new Audio("/sounds/click/coin.mp3");
-    audio.volume = 0.8;
-    audio.play();
-
     const amount = getRandomAmount();
     setCoins((prev) => (prev ?? 0) + amount);
 
     setCoinEffect({
       id: effectIdRef.current++,
       value: amount,
-      x: 40 + Math.random() * 20, // ★ 40〜60% に限定
-      y: 40 + Math.random() * 20, // ★ 40〜60% に限定
+      x: 40 + Math.random() * 20,
+      y: 40 + Math.random() * 20,
     });
   };
 
@@ -109,22 +91,20 @@ export function useClickGame() {
     setStockItems(newStock);
     setCoins((prev) => (prev ?? 0) - cost);
 
-    // ★ 固定順
     const ORDER = ["💡ノーマル", "✨レア", "🎇ウルトラ", "🎆レジェンド"];
 
-    // ★ 結果を集計
     const resultCount: Record<string, number> = {};
     for (const item of results) {
       resultCount[item] = (resultCount[item] || 0) + 1;
     }
 
-    // ★ 固定順で x表記にまとめる
-    const formatted = ORDER.filter((name) => resultCount[name]) // 出たものだけ
+    const formatted = ORDER.filter((name) => resultCount[name])
       .map((name) => `${name} x${resultCount[name]}`)
       .join(" / ");
 
     showMessage(`${count}連結果：${formatted}`);
   };
+
   // -----------------------------
   // アイテム使用
   // -----------------------------
@@ -170,19 +150,12 @@ export function useClickGame() {
   };
 
   // -----------------------------
-  // クリア
+  // クリア（音なし）
   // -----------------------------
   const handleClear = () => {
     setShowSuperFormal(true);
 
     setTimeout(() => {
-      if (bgmRef.current) {
-        bgmRef.current.pause();
-        bgmRef.current.currentTime = 0;
-      }
-
-      new Audio("/sounds/win.mp3").play();
-
       setShowSuperFormal(false);
       setShowClearButton(true);
     }, 1600);
