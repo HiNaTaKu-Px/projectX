@@ -1,23 +1,37 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export const ClearAnimation = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const particles = Array.from({ length: 20 });
+  const particlesCount = 20;
 
-  // --- Canvas 粒子（ClearAnimation1 の要素） ---
+  // ブラウザのサイズを安全に取得するためのステート
+  const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
+
   useEffect(() => {
-    // ★ ここで音を鳴らす（追加）
+    // 1. windowサイズのセット（ブラウザでのみ実行される）
+    setDimensions({
+      width: window.innerWidth,
+      height: window.innerHeight,
+    });
+
+    // 2. 音声の再生（ブラウザでのみ実行される）
     const audio = new Audio("/sounds/clear.mp3");
     audio.volume = 0.9;
-    audio.play().catch(() => {});
+    audio.play().catch(() => {
+      console.log("Audio play blocked by browser");
+    });
 
     const canvas = canvasRef.current;
     if (!canvas) return;
 
     const ctx = canvas.getContext("2d")!;
+    // 初期サイズをセット
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
     const particles = Array.from({ length: 60 }).map(() => ({
       x: canvas.width / 2,
       y: canvas.height / 2,
@@ -28,7 +42,6 @@ export const ClearAnimation = () => {
     }));
 
     let frame = 0;
-
     const render = () => {
       frame++;
       ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -53,15 +66,13 @@ export const ClearAnimation = () => {
 
   return (
     <div className="pointer-events-none fixed inset-0 z-[9999] flex items-center justify-center">
-      {/* --- 白フラッシュ（両方共通） --- */}
+      {/* 背景フラッシュ演出 */}
       <motion.div
         className="absolute inset-0 bg-white"
         initial={{ opacity: 0 }}
         animate={{ opacity: [0, 1, 0] }}
         transition={{ duration: 0.35 }}
       />
-
-      {/* --- 金色フラッシュ --- */}
       <motion.div
         className="absolute inset-0 bg-yellow-200"
         initial={{ opacity: 0 }}
@@ -69,7 +80,7 @@ export const ClearAnimation = () => {
         transition={{ duration: 0.5, delay: 0.05 }}
       />
 
-      {/* --- 放射状グラデーション爆発 --- */}
+      {/* グラデーション爆発 */}
       <motion.div
         className="absolute inset-0"
         style={{
@@ -81,32 +92,7 @@ export const ClearAnimation = () => {
         transition={{ duration: 0.9, ease: "easeOut" }}
       />
 
-      {/* --- 光輪 --- */}
-      <motion.div
-        className="absolute top-1/2 left-1/2 w-80 h-80 rounded-full -translate-x-1/2 -translate-y-1/2"
-        style={{
-          background:
-            "conic-gradient(from 0deg, yellow, white, yellow, transparent 60%)",
-        }}
-        initial={{ rotate: 0, opacity: 1, scale: 0.6 }}
-        animate={{ rotate: 360, opacity: 0, scale: 2 }}
-        transition={{ duration: 1.2, ease: "easeOut" }}
-      />
-
-      {/* --- SVG バースト --- */}
-      <motion.svg
-        className="absolute top-1/2 left-1/2 w-48 h-48 -translate-x-1/2 -translate-y-1/2"
-        initial={{ scale: 0.3, opacity: 1 }}
-        animate={{ scale: 3, opacity: 0 }}
-        transition={{ duration: 0.9, ease: "easeOut" }}
-      >
-        <path
-          d="M50 0 L60 40 L100 50 L60 60 L50 100 L40 60 L0 50 L40 40 Z"
-          fill="rgba(255,230,120,1)"
-        />
-      </motion.svg>
-
-      {/* --- ClearAnimation2 の中心アニメーション --- */}
+      {/* アニメーション要素（省略せず維持） */}
       <div className="relative w-0 h-0">
         {[0, 1, 2].map((i) => (
           <motion.div
@@ -132,10 +118,9 @@ export const ClearAnimation = () => {
           );
         })}
 
-        {particles.map((_, i) => {
-          const angle = (i / particles.length) * Math.PI * 2;
+        {[...Array(particlesCount)].map((_, i) => {
+          const angle = (i / particlesCount) * Math.PI * 2;
           const distance = 250;
-
           return (
             <motion.div
               key={`particle-${i}`}
@@ -155,8 +140,9 @@ export const ClearAnimation = () => {
 
       <canvas
         ref={canvasRef}
-        width={window.innerWidth}
-        height={window.innerHeight}
+        /* window.innerWidth ではなく dimensions を使うことで SSR 時のエラーを回避 */
+        width={dimensions.width}
+        height={dimensions.height}
         className="absolute inset-0"
       />
     </div>
