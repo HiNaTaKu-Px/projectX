@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from "react";
 import { GameLogic } from "./GameLogic";
-import { saveScoreAction } from "@/app/actions/saveScore"; // ★追加
 
 export function useHockeyGame() {
   const logicRef = useRef<GameLogic | null>(null);
@@ -108,19 +107,6 @@ export function useHockeyGame() {
 
       const result = logic.update();
       if (result === "reset") setShowReset(true);
-
-      // ★★★★★ 最大スコア更新 → DB 保存 ★★★★★
-      const current = logic.reflectCount;
-      if (current > logic.maxReflectCount) {
-        logic.maxReflectCount = current;
-
-        const token = localStorage.getItem("token");
-        const user = JSON.parse(localStorage.getItem("user") || "{}");
-
-        if (user?.id) {
-          saveScoreAction(user.id, "hockey", current);
-        }
-      }
 
       setTick((t) => t + 1);
       frameRef.current = requestAnimationFrame(loop);

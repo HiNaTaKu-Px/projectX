@@ -1,8 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { getScoresAction } from "@/app/actions/getScores";
-import { saveScoreAction } from "@/app/actions/saveScore";
 
 export function useEscapeGame() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -39,28 +37,6 @@ export function useEscapeGame() {
 
     setScore(0);
     setGameOver(false);
-  };
-
-  // ★ スコア読み込み
-  useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (!token) return;
-
-    getScoresAction(token).then((res) => {
-      if (res.ok) {
-        const escapeScore = res.scores.find((s: any) => s.game === "escape");
-        setMaxScore(escapeScore?.value ?? 0);
-      }
-    });
-  }, []);
-
-  // ★ スコア保存
-  const saveMaxScore = async () => {
-    const user = JSON.parse(localStorage.getItem("user") || "{}");
-    const userId = user?.id;
-    if (!userId) return;
-
-    await saveScoreAction(userId, "escape", maxScore);
   };
 
   // Canvas サイズ調整
@@ -237,7 +213,6 @@ export function useEscapeGame() {
     maxScore,
     gameOver,
     reset,
-    saveMaxScore,
     handleStickMove,
     handleStickEnd,
   };
