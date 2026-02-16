@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 
 type ItemListProps = {
   sortedItems: [string, number][];
@@ -11,14 +11,17 @@ type ItemListProps = {
 export function ItemList({ sortedItems, onUseItem, onUseAll }: ItemListProps) {
   const clickSound = useRef<HTMLAudioElement | null>(null);
 
-  if (!clickSound.current) {
+  useEffect(() => {
+    // SSR 回避
+    if (typeof window === "undefined") return;
+
     clickSound.current = new Audio("/sounds/click/click.mp3");
-  }
+  }, []);
 
   const playSound = () => {
     if (clickSound.current) {
       clickSound.current.currentTime = 0;
-      clickSound.current.play();
+      clickSound.current.play().catch(() => {});
     }
   };
 
