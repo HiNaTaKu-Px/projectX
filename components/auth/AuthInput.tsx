@@ -1,5 +1,3 @@
-"use client";
-
 type Props = {
   type: string;
   placeholder: string;

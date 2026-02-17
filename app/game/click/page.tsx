@@ -1,6 +1,6 @@
 "use client";
 
-import { useClickGame } from "@/lib/game/click/useClickGame";
+import { useClickGame } from "@/app/game/click/logic/useClickGame";
 import { ClickButton } from "@/components/click/ClickButton";
 import { CoinDisplay } from "@/components/click/CoinDisplay";
 import { ItemList } from "@/components/click/ItemList";

@@ -1,5 +1,3 @@
-"use client";
-
 import GachaButton from "@/components/click/GachaButton";
 
 export function GachaPanel({

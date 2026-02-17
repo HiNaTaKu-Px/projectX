@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { playSound } from "@/components/sound/Sound";
 
 type ItemListProps = {
   sortedItems: [string, number][];
@@ -9,22 +9,6 @@ type ItemListProps = {
 };
 
 export function ItemList({ sortedItems, onUseItem, onUseAll }: ItemListProps) {
-  const clickSound = useRef<HTMLAudioElement | null>(null);
-
-  useEffect(() => {
-    // SSR 回避
-    if (typeof window === "undefined") return;
-
-    clickSound.current = new Audio("/sounds/click/click.mp3");
-  }, []);
-
-  const playSound = () => {
-    if (clickSound.current) {
-      clickSound.current.currentTime = 0;
-      clickSound.current.play().catch(() => {});
-    }
-  };
-
   return (
     <div className="mb-4 border p-3 rounded bg-white/70 backdrop-blur max-w-sm mx-auto shadow space-y-4 text-gray-800 min-h-60">
       <div className="text-center mb-2">
@@ -46,7 +30,7 @@ export function ItemList({ sortedItems, onUseItem, onUseAll }: ItemListProps) {
 
             <button
               onClick={() => {
-                playSound();
+                playSound("/sounds/click/click.mp3");
                 onUseItem(name);
               }}
               className="bg-indigo-500 text-white text-[10px] px-2 py-0.5 hover:scale-105 transition rounded"
@@ -61,7 +45,7 @@ export function ItemList({ sortedItems, onUseItem, onUseAll }: ItemListProps) {
         <div className="flex justify-center pt-2">
           <button
             onClick={() => {
-              playSound();
+              playSound("/sounds/click/click.mp3");
               onUseAll();
             }}
             className="w-28 h-9 bg-red-600 text-white font-bold hover:scale-105 transition text-xs rounded"

@@ -1,4 +1,4 @@
-import { GameLogic } from "@/lib/game/hockey/GameLogic";
+import { GameLogic } from "@/app/game/hockey/logic/GameLogic";
 
 type Props = {
   fieldRef: React.RefObject<HTMLDivElement | null>;

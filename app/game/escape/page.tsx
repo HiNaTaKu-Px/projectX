@@ -1,6 +1,6 @@
 "use client";
 
-import { useEscapeGame } from "@/lib/game/escape/useEscapeGame";
+import { useEscapeGame } from "@/app/game/escape/logic/useEscapeGame";
 import { ScoreHeader } from "@/components/escape/ScoreHeader";
 import { StartButton } from "@/components/escape/StartButton";
 import { ResetButton } from "@/components/escape/ResetButton";

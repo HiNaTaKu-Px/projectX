@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import { useState } from "react";
+import { playSound } from "@/components/sound/Sound";
 
 type Props = {
   cost: number;
@@ -73,10 +74,8 @@ export default function GachaButton({
   const handleClick = () => {
     if (currentCoins < cost) return;
 
-    // ★ 押した瞬間に音を鳴らす
-    const audio = new Audio(soundSrc);
-    audio.volume = 0.8;
-    audio.play();
+    // ★ 音ロジックを共通化
+    playSound(soundSrc, 0.8);
 
     // ガチャ実行
     handleGacha(count);

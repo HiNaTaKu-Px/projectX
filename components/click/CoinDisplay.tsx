@@ -1,5 +1,3 @@
-"use client";
-
 export function CoinDisplay({ coins }: { coins: number | null }) {
   return (
     <div className="text-center mt-6">

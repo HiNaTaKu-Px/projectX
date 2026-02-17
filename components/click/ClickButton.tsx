@@ -1,8 +1,10 @@
 "use client";
 
+import { playSound } from "@/components/sound/Sound";
+
 export function ClickButton({ onClick }: { onClick: () => void }) {
   const handleClick = () => {
-    new Audio("/sounds/click/coin.mp3").play().catch(() => {});
+    playSound("/sounds/click/coin.mp3");
     onClick();
   };
 

@@ -1,18 +1,29 @@
 import { NextResponse } from "next/server";
 import { registerUser } from "@/lib/auth/register";
+import { registerSchema } from "@/lib/validators/auth";
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { email, password } = body;
 
-    if (!email || !password) {
-      return NextResponse.json(
-        { error: "メールアドレスとパスワードを入力してください" },
-        { status: 400 },
-      );
+    // -----------------------------
+    // Zod バリデーション
+    // -----------------------------
+    const parsed = registerSchema.safeParse(body);
+
+    if (!parsed.success) {
+      const errors = parsed.error.flatten().fieldErrors;
+      const message =
+        errors.email?.[0] ?? errors.password?.[0] ?? "入力内容が不正です";
+
+      return NextResponse.json({ error: message }, { status: 400 });
     }
 
+    const { email, password } = parsed.data;
+
+    // -----------------------------
+    // 登録処理
+    // -----------------------------
     const result = await registerUser(email, password);
 
     if (!result.ok) {
@@ -28,7 +39,9 @@ export async function POST(request: Request) {
       );
     }
 
-    // ★ 成功時だけ Cookie をセットするので null の可能性は消える
+    // -----------------------------
+    // Cookie セット（成功時のみ）
+    // -----------------------------
     const response = NextResponse.json({
       message: "登録成功",
       user: result.user,

@@ -1,24 +1,28 @@
 import { loginUser } from "@/lib/auth/login";
 import { NextResponse } from "next/server";
+import { loginSchema } from "@/lib/validators/auth";
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { email, password } = body;
 
-    // バリデーション
-    if (!email || !password) {
-      return NextResponse.json(
-        { error: "メールアドレスとパスワードを入力してください" },
-        { status: 400 },
-      );
+    // Zod バリデーション
+    const parsed = loginSchema.safeParse(body);
+
+    if (!parsed.success) {
+      const errors = parsed.error.flatten().fieldErrors;
+      const message =
+        errors.email?.[0] ?? errors.password?.[0] ?? "入力内容が不正です";
+
+      return NextResponse.json({ error: message }, { status: 400 });
     }
 
-    // auth.ts で作った loginUser を実行
+    const { email, password } = parsed.data;
+
+    // 認証処理
     const result = await loginUser(email, password);
 
     if (!result.ok) {
-      // エラー内容に応じたメッセージを返す
       const errorMessage =
         result.error === "not_found"
           ? "ユーザーが見つかりません"
@@ -27,7 +31,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: errorMessage }, { status: 401 });
     }
 
-    // 成功時
     return NextResponse.json({
       message: "ログインに成功しました",
       user: result.user,

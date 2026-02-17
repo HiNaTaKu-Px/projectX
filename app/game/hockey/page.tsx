@@ -1,6 +1,6 @@
 "use client";
 
-import { useHockeyGame } from "@/lib/game/hockey/useHockeyGame";
+import { useHockeyGame } from "@/app/game/hockey/logic/useHockeyGame";
 import { ScoreHeader } from "@/components/hockey/ScoreHeader";
 import { StartButton } from "@/components/hockey/StartButton";
 import { ResetButton } from "@/components/hockey/ResetButton";
