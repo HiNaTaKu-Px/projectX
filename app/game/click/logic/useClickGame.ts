@@ -16,18 +16,22 @@ export function useClickGame() {
   const coinsRef = useRef(0);
 
   // -----------------------------
-  // ★ ログインユーザー情報
+  // ★ ログインユーザー情報（SSR回避）
   // -----------------------------
-  const user = JSON.parse(localStorage.getItem("user") || "null");
+  const [user, setUser] = useState<any>(null);
   const isLoggedIn = !!user?.id;
 
-  // -----------------------------
-  // ★ 1. ログインしている場合だけ DB から読み込む
-  // -----------------------------
   useEffect(() => {
-    const loadData = async () => {
-      if (!isLoggedIn) return; // ← ゲストは読み込まない
+    const stored = localStorage.getItem("user");
+    if (stored) {
+      setUser(JSON.parse(stored));
+    }
+  }, []);
 
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const loadData = async () => {
       const res = await fetch(`/api/user/${user.id}`);
       const data = await res.json();
 
@@ -37,7 +41,7 @@ export function useClickGame() {
     };
 
     loadData();
-  }, []);
+  }, [user]);
 
   // coins が変わるたびに ref に反映
   useEffect(() => {
