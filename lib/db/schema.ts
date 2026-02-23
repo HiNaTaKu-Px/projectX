@@ -12,12 +12,15 @@ export const appUsers = pgTable("app_users", {
   // ★ ここに追加！
   avatar: json("avatar")
     .$type<{
-      hair: string;
-      clothes: string;
-      bg: string;
+      mode: "color" | "image";
+      hair?: string;
+      clothes?: string;
+      bg?: string;
+      image?: string;
     }>()
     .notNull()
     .default({
+      mode: "color",
       hair: "#000000",
       clothes: "#ffffff",
       bg: "#cccccc",

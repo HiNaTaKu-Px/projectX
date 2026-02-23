@@ -64,6 +64,13 @@
       "when": 1771855097348,
       "tag": "0008_bright_solo",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1771867654406,
+      "tag": "0009_loose_doomsday",
+      "breakpoints": true
     }
   ]
 }

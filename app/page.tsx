@@ -24,17 +24,17 @@ export default function Home() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [deleteSuccess, setDeleteSuccess] = useState(false);
 
-  // ★ localStorage を使わず、サーバーのセッションでログイン状態を判定
+  // ★ サーバーからログインユーザー取得
   useEffect(() => {
     const loadUser = async () => {
       const res = await fetch("/api/me");
       const data = await res.json();
-      setUser(data.user); // ← 本物のログイン状態
+      setUser(data.user);
     };
     loadUser();
   }, []);
 
-  // ★ ログアウト処理（localStorage を使わない）
+  // ★ ログアウト処理
   const handleLogout = async () => {
     try {
       const res = await fetch("/api/logout", { method: "POST" });
@@ -104,11 +104,15 @@ export default function Home() {
     fetchScores();
   }, []);
 
+  // ★ Avatar 型を DB と一致させる
   type Avatar = {
-    hair: string;
-    clothes: string;
-    bg: string;
+    mode: "color" | "image";
+    hair?: string;
+    clothes?: string;
+    bg?: string;
+    image?: string;
   };
+
   const handleDeleteAccount = async () => {
     try {
       const res = await fetch("/api/delete-account", { method: "POST" });
@@ -116,7 +120,7 @@ export default function Home() {
       if (res.ok) {
         setUser(null);
         setModalType(null);
-        setDeleteSuccess(true); // ← ★ ポップアップ表示
+        setDeleteSuccess(true);
       }
     } catch (err) {
       console.error("アカウント削除失敗:", err);
@@ -129,41 +133,50 @@ export default function Home() {
         <DeleteAccountSuccessModal
           onClose={() => {
             setDeleteSuccess(false);
-            router.push("/"); // ホームへ戻る
+            router.push("/");
           }}
         />
       )}
 
+      {/* ★ 左上のアバター表示（カラー or 画像） */}
       {user && (
         <button
           onClick={() => setMenuOpen(!menuOpen)}
-          className="fixed mt-4 left-5 z-50 rounded-full shadow hover:opacity-80 transition"
+          className="fixed mt-3 left-5 z-50 rounded-full shadow hover:opacity-80 transition"
         >
           <div
-            className="w-14 h-14 rounded-full flex items-center justify-center"
+            className="w-14 h-14 rounded-full flex items-center justify-center overflow-hidden"
             style={{ backgroundColor: user.avatar?.bg ?? "#ccc" }}
           >
-            <svg width="40" height="40" viewBox="0 0 100 100">
-              <circle
-                cx="50"
-                cy="30"
-                r="20"
-                fill={user.avatar?.hair ?? "#000"}
+            {user.avatar?.mode === "image" ? (
+              <img
+                src={`/avatars/${user.avatar.image}.png`}
+                className="w-full h-full object-cover"
               />
-              <rect
-                x="30"
-                y="50"
-                width="40"
-                height="40"
-                fill={user.avatar?.clothes ?? "#fff"}
-              />
-            </svg>
+            ) : (
+              <svg width="40" height="40" viewBox="0 0 100 100">
+                <circle
+                  cx="50"
+                  cy="30"
+                  r="20"
+                  fill={user.avatar?.hair ?? "#000"}
+                />
+                <rect
+                  x="30"
+                  y="50"
+                  width="40"
+                  height="40"
+                  fill={user.avatar?.clothes ?? "#fff"}
+                />
+              </svg>
+            )}
           </div>
         </button>
       )}
 
+      {/* メニュー */}
       {menuOpen && (
-        <div className="fixed top-20 left-2 z-50 bg-white border shadow-lg rounded-lg p-2 w-40">
+        <div className="fixed top-18 left-2 z-50 bg-white border shadow-lg rounded-lg p-2 w-40">
           <div className="flex flex-col gap-2">
             {user && (
               <div className="flex flex-col items-center gap-2 border-b pb-2">
@@ -175,12 +188,12 @@ export default function Home() {
               onClick={() => {
                 setModalType("avatar");
                 setMenuOpen(false);
+                document.body.style.overflow = "hidden"; // ★ スクロール禁止
               }}
               className="w-full block bg-green-500 text-white px-3 py-2 rounded-md font-bold hover:bg-green-600"
             >
               アバター
             </button>
-
             <button
               onClick={() => {
                 setModalType("menu");
@@ -216,6 +229,7 @@ export default function Home() {
         </div>
       )}
 
+      {/* モーダル類 */}
       {modalType === "reset" && (
         <ConfirmModal
           type="reset"
@@ -233,6 +247,7 @@ export default function Home() {
           onCancel={() => setModalType(null)}
         />
       )}
+
       {modalType === "deleteAccount" && (
         <ConfirmModal
           type="deleteAccount"
@@ -257,9 +272,17 @@ export default function Home() {
                 const data = await res.json();
                 setUser(data.user);
 
+                // ★ スクロール解除
+                document.body.style.overflow = "auto";
+
                 setModalType(null);
               }}
-              onClose={() => setModalType(null)}
+              onClose={() => {
+                // ★ スクロール解除
+                document.body.style.overflow = "auto";
+
+                setModalType(null);
+              }}
             />
           </div>
         </div>
@@ -269,6 +292,7 @@ export default function Home() {
         <LogoutSuccessModal onClose={() => setLogoutSuccess(false)} />
       )}
 
+      {/* メイン */}
       <main className="min-h-dvh w-full overflow-x-hidden flex items-center justify-center bg-gray-100">
         <div className="w-full p-2 border-4 border-green-300 rounded-2xl shadow-2xl bg-white space-y-2">
           {modalType === "menu" && (
@@ -276,17 +300,14 @@ export default function Home() {
           )}
 
           <div className="relative w-full flex items-center px-2 py-2">
-            {/* 左：ログインボタン or 空 */}
             <div className="flex-shrink-0">
               <UserStatusBar user={user} />
             </div>
 
-            {/* 中央：ホーム（絶対中央固定） */}
             <h1 className="absolute left-1/2 -translate-x-1/2 text-3xl font-bold">
               ホーム
             </h1>
 
-            {/* 右：ランキング */}
             <button
               onClick={() => {
                 router.push("/ranking");

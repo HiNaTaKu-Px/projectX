@@ -1,0 +1,1 @@
+ALTER TABLE "app_users" ALTER COLUMN "avatar" SET DEFAULT '{"mode":"color","hair":"#000000","clothes":"#ffffff","bg":"#cccccc"}'::json;

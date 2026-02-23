@@ -18,9 +18,37 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  // ★ AvatarPicker から送られてくるデータ
   const avatar = await req.json();
 
-  await db.update(appUsers).set({ avatar }).where(eq(appUsers.id, user.id));
+  // ★ mode によって保存内容が変わる
+  if (avatar.mode === "color") {
+    // カラーモード
+    await db
+      .update(appUsers)
+      .set({
+        avatar: {
+          mode: "color",
+          hair: avatar.hair,
+          clothes: avatar.clothes,
+          bg: avatar.bg,
+        },
+      })
+      .where(eq(appUsers.id, user.id));
+  } else if (avatar.mode === "image") {
+    // 画像モード
+    await db
+      .update(appUsers)
+      .set({
+        avatar: {
+          mode: "image",
+          image: avatar.image,
+        },
+      })
+      .where(eq(appUsers.id, user.id));
+  } else {
+    return NextResponse.json({ error: "Invalid avatar mode" }, { status: 400 });
+  }
 
   return NextResponse.json({ success: true });
 }
