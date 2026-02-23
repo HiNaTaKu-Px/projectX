@@ -1,20 +1,44 @@
 "use client";
 
-import { useState } from "react";
-import { createPostAction } from "@/lib/actions/post";
+import { useState, useEffect } from "react";
+import { createPostAction, editPostAction } from "@/lib/actions/post";
 import Link from "next/link";
-export default function NewPostPage() {
+
+export default function NewPostPage({ params }: { params?: { id?: string } }) {
+  const isEdit = Boolean(params?.id); // ← 編集モード判定
   const [content, setContent] = useState("");
   const [isPending, setIsPending] = useState(false);
+
+  // ★ 編集モードなら既存の投稿を取得
+  useEffect(() => {
+    if (!isEdit) return;
+
+    const loadPost = async () => {
+      const res = await fetch(`/api/post/${params!.id}`);
+      const data = await res.json();
+      setContent(data.content);
+    };
+
+    loadPost();
+  }, [isEdit, params]);
 
   const submit = async () => {
     setIsPending(true);
 
-    const result = await createPostAction(content);
+    let result;
+
+    if (isEdit) {
+      // ★ 編集モード
+      result = await editPostAction(Number(params!.id), content);
+    } else {
+      // ★ 新規投稿
+      result = await createPostAction(content);
+    }
 
     if (result?.error) {
       alert(result.error);
       setIsPending(false);
+      return;
     }
   };
 
@@ -22,10 +46,10 @@ export default function NewPostPage() {
     <div className="min-h-screen flex flex-col items-center justify-center bg-green-50">
       {/* タイトル */}
       <h1 className="p-10 text-2xl font-bold text-center text-gray-800">
-        📝 新規投稿
+        {isEdit ? "✏️ 投稿を編集" : "📝 新規投稿"}
       </h1>
 
-      {/* 戻るボタン（タイトルの下） */}
+      {/* 戻るボタン */}
       <Link
         href="/board"
         className="mb-6 bg-green-300 text-white px-4 py-2 rounded-md font-bold shadow hover:bg-green-200 transition"
@@ -48,7 +72,7 @@ export default function NewPostPage() {
           onClick={submit}
           disabled={isPending || !content}
         >
-          {isPending ? "投稿中..." : "投稿する"}
+          {isPending ? "保存中..." : isEdit ? "保存する" : "投稿する"}
         </button>
       </div>
     </div>

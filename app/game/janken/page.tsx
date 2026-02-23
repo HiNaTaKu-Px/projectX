@@ -2,18 +2,16 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-
 import BracketUI from "@/components/janken/BracketUI";
 import { BgmController } from "@/components/click/BgmController";
-
 import { StageHeader } from "@/components/janken/StageHeader";
 import { WinStars } from "@/components/janken/WinStars";
 import { ResultOverlay } from "@/components/janken/ResultOverlay";
 import { JankenButtons } from "@/components/janken/JankenButtons";
 import { SkillButton } from "@/components/janken/SkillButton";
 import { JankenAnimation } from "@/components/janken/JankenAnimation";
-
 import { useJankenGame } from "./logic/useJankenGame";
+import { CountHeader } from "@/components/janken/CountHeader";
 
 export default function JankenPage() {
   const router = useRouter();
@@ -39,6 +37,27 @@ export default function JankenPage() {
   const [animating, setAnimating] = useState(false);
   const [showBracket, setShowBracket] = useState(false);
 
+  // ★ 優勝回数（累計）
+  const [winCount, setWinCount] = useState(0);
+
+  useEffect(() => {
+    const fetchWinCount = async () => {
+      try {
+        const res = await fetch("/api/wincount?game=janken_wins");
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.value !== undefined) {
+            setWinCount(data.value);
+          }
+        }
+      } catch (e) {
+        console.error("優勝回数の取得に失敗しました", e);
+      }
+    };
+
+    fetchWinCount();
+  }, []);
+
   const stageLabels = ["初戦", "二回戦", "準決勝", "決勝"];
   const stageBackgrounds = [
     "from-blue-900 to-black",
@@ -50,22 +69,18 @@ export default function JankenPage() {
   const handlePlay = (hand: string) => {
     const result = play(hand);
     if (!result) return;
-
     setAnimating(true);
   };
 
   const handleSkill = () => {
     const result = useSkill();
     if (result === "error") return;
-
     setAnimating(true);
   };
 
-  // ★ applyResult の後にステージ進行を行う
   useEffect(() => {
     if (playerWin === 3) {
       setShowBracket(true);
-
       setTimeout(() => {
         setCurrentStage((prev) => prev + 1);
         setPlayerWin(0);
@@ -77,7 +92,9 @@ export default function JankenPage() {
 
   return (
     <div className="relative">
-      {/* 🎵 勝敗がついていない間だけ BGM 再生 */}
+      {/* ★ 優勝回数ヘッダー */}
+      <CountHeader winCount={winCount} currentStage={currentStage} />
+
       {resultState === "none" && (
         <BgmController src="/sounds/click/clickbgm.mp3" />
       )}

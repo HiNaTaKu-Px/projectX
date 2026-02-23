@@ -57,6 +57,13 @@
       "when": 1771609289058,
       "tag": "0007_ambitious_warbound",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1771855097348,
+      "tag": "0008_bright_solo",
+      "breakpoints": true
     }
   ]
 }

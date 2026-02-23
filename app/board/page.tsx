@@ -1,16 +1,30 @@
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
+
 import { db } from "@/lib/db/db";
 import { posts, appUsers } from "@/lib/db/schema";
 import { desc, eq } from "drizzle-orm";
 import Link from "next/link";
+import { cookies } from "next/headers";
+import { auth } from "@/lib/auth/lucia";
+import { DeleteButton } from "@/components/board/DeleteButton";
 
 export default async function BoardPage() {
+  const cookieStore = await cookies();
+  const sessionId = cookieStore.get(auth.sessionCookieName)?.value ?? null;
+
+  let currentUser: any = null;
+  if (sessionId) {
+    const { user } = await auth.validateSession(sessionId);
+    currentUser = user;
+  }
+
   const allPosts = await db
     .select({
       id: posts.id,
       content: posts.content,
       createdAt: posts.createdAt,
-      userEmail: appUsers.email, // ← ここで JOIN した email を取得
+      userId: posts.userId,
+      userEmail: appUsers.email,
     })
     .from(posts)
     .leftJoin(appUsers, eq(posts.userId, appUsers.id))
@@ -37,22 +51,32 @@ export default async function BoardPage() {
             key={p.id}
             className="bg-white border border-gray-300 rounded-lg shadow p-4 relative"
           >
-            {/* 🔵 投稿者名（メールアドレス） */}
             <p className="text-sm text-green-700 font-bold mb-2">
               投稿者: {p.userEmail ?? "不明なユーザー"}
             </p>
 
-            {/* 投稿内容 */}
             <p className="text-gray-800 text-lg whitespace-pre-wrap">
               {p.content}
             </p>
 
-            {/* 日付 */}
             <div className="text-right mt-3">
               <span className="text-sm text-gray-500">
                 {p.createdAt?.toLocaleString()}
               </span>
             </div>
+
+            {currentUser && p.userId === currentUser.id && (
+              <div className="flex gap-3 mt-3">
+                <Link
+                  href={`/board/edit/${p.id}`}
+                  className="text-blue-600 font-bold hover:underline"
+                >
+                  編集
+                </Link>
+
+                <DeleteButton postId={p.id} />
+              </div>
+            )}
           </div>
         ))}
       </div>

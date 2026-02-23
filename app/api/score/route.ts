@@ -16,13 +16,13 @@ export async function GET() {
   const { user } = await auth.validateSession(sessionId);
   if (!user) return NextResponse.json([]);
 
-  // --- ① 通常ゲームのスコア
+  // --- ① 全スコア取得
   const gameScores = await db
     .select()
     .from(scores)
     .where(eq(scores.userId, user.id));
 
-  // --- ② クリック（coins）を取得
+  // --- ② クリック（coins）
   const [userData] = await db
     .select()
     .from(appUsers)
@@ -30,9 +30,19 @@ export async function GET() {
 
   const clickScore = userData?.coins ?? 0;
 
-  // --- ③ クリックを先頭に追加して返す
+  // --- ③ じゃんけんの優勝回数
+  const jankenWin =
+    gameScores.find((g) => g.game === "janken_wins")?.value ?? 0;
+
+  // --- ④ 他のゲーム（じゃんけん以外）
+  const otherGames = gameScores.filter(
+    (g) => g.game !== "janken_wins" && g.game !== "janken_highscore",
+  );
+
+  // --- ⑤ 英語キーで返す（ScoreModal と一致）
   return NextResponse.json([
-    { game: "クリック", value: clickScore },
-    ...gameScores,
+    { game: "click", value: clickScore },
+    { game: "janken_wins", value: jankenWin },
+    ...otherGames,
   ]);
 }

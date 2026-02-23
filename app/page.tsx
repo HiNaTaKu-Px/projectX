@@ -9,44 +9,47 @@ import { ConfirmModal } from "@/components/home/ConfirmModal";
 import { LogoutSuccessModal } from "@/components/home/LogoutSuccessModal";
 import { GameCard } from "@/components/home/GameCard";
 import { UserStatusBar } from "@/components/home/UserStatusBar";
+import { AvatarPicker } from "@/components/avatar/AvatarPicker";
+import { DeleteAccountSuccessModal } from "@/components/home/DeleteAccountSuccessModal";
 
 export default function Home() {
   const [user, setUser] = useState<any>(null);
   const [modalType, setModalType] = useState<
-    "reset" | "logout" | "menu" | null
+    "reset" | "logout" | "menu" | "avatar" | "deleteAccount" | null
   >(null);
+
   const [logoutSuccess, setLogoutSuccess] = useState(false);
   const [scores, setScores] = useState<any[]>([]);
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [deleteSuccess, setDeleteSuccess] = useState(false);
 
+  // ★ localStorage を使わず、サーバーのセッションでログイン状態を判定
   useEffect(() => {
-    const savedUser = localStorage.getItem("user");
-    if (savedUser) {
-      setUser(JSON.parse(savedUser));
-    }
+    const loadUser = async () => {
+      const res = await fetch("/api/me");
+      const data = await res.json();
+      setUser(data.user); // ← 本物のログイン状態
+    };
+    loadUser();
   }, []);
 
-  // ★ APIを叩く方式のログアウト処理
+  // ★ ログアウト処理（localStorage を使わない）
   const handleLogout = async () => {
     try {
-      // 1. APIルートを叩いてサーバー側のセッションを消す
       const res = await fetch("/api/logout", { method: "POST" });
 
       if (res.ok) {
-        // 2. ローカルの情報をクリア
-        localStorage.removeItem("user");
         setUser(null);
         setModalType(null);
         setLogoutSuccess(true);
-
-        // 3. 画面を最新状態にする
         router.refresh();
       }
     } catch (err) {
       console.error("ログアウト失敗:", err);
     }
   };
+
   const games = [
     {
       key: "click",
@@ -101,25 +104,83 @@ export default function Home() {
     fetchScores();
   }, []);
 
+  type Avatar = {
+    hair: string;
+    clothes: string;
+    bg: string;
+  };
+  const handleDeleteAccount = async () => {
+    try {
+      const res = await fetch("/api/delete-account", { method: "POST" });
+
+      if (res.ok) {
+        setUser(null);
+        setModalType(null);
+        setDeleteSuccess(true); // ← ★ ポップアップ表示
+      }
+    } catch (err) {
+      console.error("アカウント削除失敗:", err);
+    }
+  };
+
   return (
     <>
+      {deleteSuccess && (
+        <DeleteAccountSuccessModal
+          onClose={() => {
+            setDeleteSuccess(false);
+            router.push("/"); // ホームへ戻る
+          }}
+        />
+      )}
+
       {user && (
         <button
           onClick={() => setMenuOpen(!menuOpen)}
-          className="fixed mt-4  left-5 z-50 bg-gray-800 text-white px-4 py-3 rounded-lg shadow font-bold hover:bg-gray-700 "
+          className="fixed mt-4 left-5 z-50 rounded-full shadow hover:opacity-80 transition"
         >
-          ☰
+          <div
+            className="w-14 h-14 rounded-full flex items-center justify-center"
+            style={{ backgroundColor: user.avatar?.bg ?? "#ccc" }}
+          >
+            <svg width="40" height="40" viewBox="0 0 100 100">
+              <circle
+                cx="50"
+                cy="30"
+                r="20"
+                fill={user.avatar?.hair ?? "#000"}
+              />
+              <rect
+                x="30"
+                y="50"
+                width="40"
+                height="40"
+                fill={user.avatar?.clothes ?? "#fff"}
+              />
+            </svg>
+          </div>
         </button>
       )}
 
       {menuOpen && (
-        <div className="fixed top-18 left-1 z-50 bg-white border shadow-lg rounded-lg p-2 w-40">
+        <div className="fixed top-20 left-2 z-50 bg-white border shadow-lg rounded-lg p-2 w-40">
           <div className="flex flex-col gap-2">
             {user && (
-              <p className="text-xl font-bold text-center text-green-700 px-2 py-1 border-b">
-                {user.email}
-              </p>
+              <div className="flex flex-col items-center gap-2 border-b pb-2">
+                <p className="text-sm font-bold text-gray-800">{user.email}</p>
+              </div>
             )}
+
+            <button
+              onClick={() => {
+                setModalType("avatar");
+                setMenuOpen(false);
+              }}
+              className="w-full block bg-green-500 text-white px-3 py-2 rounded-md font-bold hover:bg-green-600"
+            >
+              アバター
+            </button>
+
             <button
               onClick={() => {
                 setModalType("menu");
@@ -154,11 +215,11 @@ export default function Home() {
           </div>
         </div>
       )}
+
       {modalType === "reset" && (
         <ConfirmModal
           type="reset"
           onConfirm={() => {
-            localStorage.clear();
             window.location.reload();
           }}
           onCancel={() => setModalType(null)}
@@ -168,41 +229,73 @@ export default function Home() {
       {modalType === "logout" && (
         <ConfirmModal
           type="logout"
-          onConfirm={handleLogout} // ここで handleLogout を呼ぶ
+          onConfirm={handleLogout}
           onCancel={() => setModalType(null)}
         />
+      )}
+      {modalType === "deleteAccount" && (
+        <ConfirmModal
+          type="deleteAccount"
+          onConfirm={handleDeleteAccount}
+          onCancel={() => setModalType(null)}
+        />
+      )}
+
+      {modalType === "avatar" && (
+        <div className="fixed inset-0 bg-green-50 bg-opacity-50 flex items-center justify-center z-[9999]">
+          <div className="bg-white p-4 rounded-xl shadow-xl w-80">
+            <AvatarPicker
+              initial={user?.avatar}
+              onSave={async (newAvatar: Avatar) => {
+                await fetch("/api/avatar", {
+                  method: "POST",
+                  body: JSON.stringify(newAvatar),
+                });
+
+                // ★ DB 更新後、最新ユーザー情報を再取得
+                const res = await fetch("/api/me");
+                const data = await res.json();
+                setUser(data.user);
+
+                setModalType(null);
+              }}
+              onClose={() => setModalType(null)}
+            />
+          </div>
+        </div>
       )}
 
       {logoutSuccess && (
         <LogoutSuccessModal onClose={() => setLogoutSuccess(false)} />
       )}
+
       <main className="min-h-dvh w-full overflow-x-hidden flex items-center justify-center bg-gray-100">
         <div className="w-full p-2 border-4 border-green-300 rounded-2xl shadow-2xl bg-white space-y-2">
           {modalType === "menu" && (
             <ScoreModal scores={scores} onClose={() => setModalType(null)} />
           )}
 
-          <div className="relative w-full">
-            {/* 左側に固定配置 */}
-            <div className="absolute left-2 top-1">
+          <div className="relative w-full flex items-center px-2 py-2">
+            {/* 左：ログインボタン or 空 */}
+            <div className="flex-shrink-0">
               <UserStatusBar user={user} />
             </div>
 
-            {/* 右側にランキングボタン */}
+            {/* 中央：ホーム（絶対中央固定） */}
+            <h1 className="absolute left-1/2 -translate-x-1/2 text-3xl font-bold">
+              ホーム
+            </h1>
+
+            {/* 右：ランキング */}
             <button
               onClick={() => {
                 router.push("/ranking");
                 setMenuOpen(false);
               }}
-              className="absolute right-2 top-1 bg-green-500 text-white px-3 py-2 rounded-md font-bold hover:bg-green-600"
+              className="ml-auto bg-green-500 text-white px-3 py-2 rounded-md font-bold hover:bg-green-600 flex-shrink-0"
             >
               ランキング
             </button>
-
-            {/* 中央タイトル */}
-            <h1 className="text-5xl font-bold text-center mt-2 rounded-md">
-              ホーム
-            </h1>
           </div>
 
           <SectionBox>
@@ -217,24 +310,19 @@ export default function Home() {
                 <GameCard key={key} {...rest} />
               ))}
 
-              <div className="flex flex-col gap-2 p-4 border rounded-xl bg-white shadow">
-                <div className="text-lg font-bold text-gray-700">共通</div>
-
-                <p className="text-sm text-gray-700">
-                  ▶ データ消去ボタンでゲーム初期化
-                </p>
-
+              {user && (
                 <button
-                  onClick={() => setModalType("reset")}
+                  onClick={() => setModalType("deleteAccount")}
                   className="px-3 py-2 bg-red-500 text-white font-bold rounded-md shadow hover:bg-red-700 transition"
                 >
-                  データ消去
+                  アカウント消去
                 </button>
-              </div>
+              )}
             </div>
           </SectionBox>
         </div>
       </main>
+
       <footer className="w-full text-center text-sm text-gray-500 py-6">
         © {new Date().getFullYear()} HiNaTaKu-Px. Released under the MIT
         License.

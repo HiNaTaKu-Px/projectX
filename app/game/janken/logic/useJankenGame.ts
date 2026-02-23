@@ -76,6 +76,23 @@ export function useJankenGame() {
       setEndMessage("🎉 優勝おめでとう！ 🎉");
       setResultState("win");
       setShowClear(true);
+
+      // ★ 優勝回数を DB に保存
+      const saveWinCount = async () => {
+        try {
+          await fetch("/api/wincount", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              game: "janken_wins", // ← ゲーム名は自由に決めてOK
+            }),
+          });
+        } catch (e) {
+          console.error("優勝回数の保存に失敗しました", e);
+        }
+      };
+
+      saveWinCount();
     }
   }, [currentStage]);
 

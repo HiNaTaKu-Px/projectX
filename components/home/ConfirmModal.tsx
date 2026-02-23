@@ -5,23 +5,38 @@ export function ConfirmModal({
   onConfirm,
   onCancel,
 }: {
-  type: "reset" | "logout";
+  type: "reset" | "logout" | "deleteAccount" | "deletePost"; // ★ 追加
   onConfirm: () => void;
   onCancel: () => void;
 }) {
+  // 文言をタイプごとに分岐
+  const title =
+    type === "reset"
+      ? "初期化しますか？"
+      : type === "logout"
+        ? "ログアウトしますか？"
+        : type === "deleteAccount"
+          ? "アカウントを削除しますか？"
+          : "投稿を削除しますか？"; // ★ deletePost
+
+  const confirmLabel =
+    type === "reset"
+      ? "消去する"
+      : type === "logout"
+        ? "ログアウト"
+        : "削除する"; // deleteAccount / deletePost 共通
+
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[9999]">
       <div className="bg-white p-6 rounded-lg shadow-xl text-center">
-        <p className="text-lg font-bold mb-4">
-          {type === "reset" ? "初期化しますか？" : "ログアウトしますか？"}
-        </p>
+        <p className="text-lg font-bold mb-4">{title}</p>
 
         <div className="flex gap-4 justify-center">
           <button
             onClick={onConfirm}
             className="px-4 py-2 bg-red-500 text-white rounded font-bold shadow-[0_4px_0_#7f1d1d] active:shadow-none active:translate-y-1 transition"
           >
-            {type === "reset" ? "消去する" : "ログアウト"}
+            {confirmLabel}
           </button>
 
           <button

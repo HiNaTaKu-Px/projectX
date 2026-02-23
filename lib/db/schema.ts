@@ -1,16 +1,27 @@
-import { pgTable, text, timestamp, integer } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, integer, json } from "drizzle-orm/pg-core";
 
-// -----------------------------
-// Users（Lucia 用）
-// -----------------------------
 export const appUsers = pgTable("app_users", {
   id: text("id").primaryKey(),
   email: text("email").notNull().unique(),
   password: text("password").notNull(),
-  coins: integer("coins").default(0), // ← 追加！
+  coins: integer("coins").default(0),
   createdAt: timestamp("created_at").defaultNow(),
-  items: text("items"), // ← 追加
+  items: text("items"),
   stockItems: text("stockItems"),
+
+  // ★ ここに追加！
+  avatar: json("avatar")
+    .$type<{
+      hair: string;
+      clothes: string;
+      bg: string;
+    }>()
+    .notNull()
+    .default({
+      hair: "#000000",
+      clothes: "#ffffff",
+      bg: "#cccccc",
+    }),
 });
 
 // -----------------------------

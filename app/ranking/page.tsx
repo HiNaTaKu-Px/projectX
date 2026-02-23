@@ -16,11 +16,20 @@ export default function RankingPage() {
 
   if (!ranking) return <p className="text-center mt-10">読み込み中...</p>;
 
+  // ゲーム名
   const gameLabels = {
     click: "クリック",
     janken: "ジャンケン",
     hockey: "ホッケー",
     escape: "エスケープ",
+  } as const;
+
+  // ★ 右側に表示する説明ラベル
+  const valueLabels = {
+    click: "コイン数",
+    janken: "優勝回数",
+    hockey: "最大スコア",
+    escape: "最大スコア",
   } as const;
 
   type GameKey = keyof typeof gameLabels;
@@ -39,7 +48,13 @@ export default function RankingPage() {
 
       {(Object.keys(gameLabels) as GameKey[]).map((key) => (
         <div key={key} className="p-4 border rounded-xl shadow bg-white">
-          <h2 className="text-2xl font-bold mb-2">{gameLabels[key]}</h2>
+          {/* ★ タイトル左・説明ラベル右 */}
+          <div className="flex justify-between items-center mb-2">
+            <h2 className="text-2xl font-bold">{gameLabels[key]}</h2>
+            <span className="text-gray-600 text-sm font-semibold">
+              （{valueLabels[key]}）
+            </span>
+          </div>
 
           {(!ranking[key] || ranking[key].length === 0) && (
             <p className="text-gray-500">まだスコアがありません</p>

@@ -5,16 +5,15 @@ import { desc, eq } from "drizzle-orm";
 
 export async function GET() {
   try {
-    const games = ["janken", "hockey", "escape"];
     const result: any = {};
 
     // -----------------------------
-    // ★ click は coins ランキングにする
+    // ★ click（coins）ランキング
     // -----------------------------
     const clickRanking = await db
       .select({
         email: appUsers.email,
-        value: appUsers.coins, // ← coins を click の value として扱う
+        value: appUsers.coins,
       })
       .from(appUsers)
       .orderBy(desc(appUsers.coins))
@@ -23,22 +22,52 @@ export async function GET() {
     result["click"] = clickRanking;
 
     // -----------------------------
-    // ★ 他のゲームは scores テーブルから取得
+    // ★ じゃんけん（優勝回数のみ）
     // -----------------------------
-    for (const game of games) {
-      const top3 = await db
-        .select({
-          value: scores.value,
-          email: appUsers.email,
-        })
-        .from(scores)
-        .leftJoin(appUsers, eq(scores.userId, appUsers.id))
-        .where(eq(scores.game, game))
-        .orderBy(desc(scores.value))
-        .limit(3);
+    const jankenWins = await db
+      .select({
+        value: scores.value,
+        email: appUsers.email,
+      })
+      .from(scores)
+      .leftJoin(appUsers, eq(scores.userId, appUsers.id))
+      .where(eq(scores.game, "janken_wins"))
+      .orderBy(desc(scores.value))
+      .limit(3);
 
-      result[game] = top3;
-    }
+    result["janken"] = jankenWins;
+
+    // -----------------------------
+    // ★ hockey
+    // -----------------------------
+    const hockeyTop3 = await db
+      .select({
+        value: scores.value,
+        email: appUsers.email,
+      })
+      .from(scores)
+      .leftJoin(appUsers, eq(scores.userId, appUsers.id))
+      .where(eq(scores.game, "hockey"))
+      .orderBy(desc(scores.value))
+      .limit(3);
+
+    result["hockey"] = hockeyTop3;
+
+    // -----------------------------
+    // ★ escape
+    // -----------------------------
+    const escapeTop3 = await db
+      .select({
+        value: scores.value,
+        email: appUsers.email,
+      })
+      .from(scores)
+      .leftJoin(appUsers, eq(scores.userId, appUsers.id))
+      .where(eq(scores.game, "escape"))
+      .orderBy(desc(scores.value))
+      .limit(3);
+
+    result["escape"] = escapeTop3;
 
     return NextResponse.json(result);
   } catch (e) {

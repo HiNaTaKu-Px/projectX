@@ -3,26 +3,26 @@
 import { useRouter } from "next/navigation";
 
 type Props = {
-  user?: any; // ← optional に変更
+  user?: any;
 };
 
 export function UserStatusBar({ user }: Props) {
   const router = useRouter();
 
   return (
-    <div className="w-full flex flex-col justify-center items-center gap-0 py-0">
-      {user ? null : (
-        <>
-          <div className="flex gap-4 mt-0">
-            <button
-              onClick={() => router.push("/login")}
-              className="px-4 py-2 text-base bg-green-500 text-white font-bold rounded-lg shadow hover:bg-green-600 transition"
-            >
-              ログイン
-            </button>
-          </div>
-        </>
+    <div className="w-full flex justify-center items-center py-0">
+      {/* ▼ ログインしていない時だけ表示 */}
+      {!user && (
+        <button
+          onClick={() => router.push("/login")}
+          className="px-4 py-2 text-base bg-green-500 text-white font-bold rounded-lg shadow hover:bg-green-600 transition"
+        >
+          ログイン
+        </button>
       )}
+
+      {/* ▼ ログインしている時は何も表示しない */}
+      {user && null}
     </div>
   );
 }
