@@ -5,11 +5,10 @@ export function ConfirmModal({
   onConfirm,
   onCancel,
 }: {
-  type: "reset" | "logout" | "deleteAccount" | "deletePost"; // ★ 追加
+  type: "reset" | "logout" | "deleteAccount" | "deletePost";
   onConfirm: () => void;
   onCancel: () => void;
 }) {
-  // 文言をタイプごとに分岐
   const title =
     type === "reset"
       ? "初期化しますか？"
@@ -17,14 +16,14 @@ export function ConfirmModal({
         ? "ログアウトしますか？"
         : type === "deleteAccount"
           ? "アカウントを削除しますか？"
-          : "投稿を削除しますか？"; // ★ deletePost
+          : "投稿を削除しますか？";
 
   const confirmLabel =
     type === "reset"
       ? "消去する"
       : type === "logout"
         ? "ログアウト"
-        : "削除する"; // deleteAccount / deletePost 共通
+        : "削除する";
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[9999]">
