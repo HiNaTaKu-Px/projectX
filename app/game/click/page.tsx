@@ -1,18 +1,18 @@
 "use client";
 
 import { useClickGame } from "@/app/game/click/logic/useClickGame";
-import { ClickButton } from "@/components/click/ClickButton";
-import { CoinDisplay } from "@/components/click/CoinDisplay";
-import { ItemList } from "@/components/click/ItemList";
-import { GachaPanel } from "@/components/click/GachaPanel";
-import { ClearButton } from "@/components/click/ClearButton";
-import { ClearModal } from "@/components/click/ClearModal";
+import { ClickButton } from "@/app/game/click/components/ClickButton";
+import { CoinDisplay } from "@/app/game/click/components/CoinDisplay";
+import { ItemList } from "@/app/game/click/components/ItemList";
+import { GachaPanel } from "@/app/game/click/components/GachaPanel";
+import { ClearButton } from "@/app/game/click/components/ClearButton";
+import { ClearModal } from "@/app/game/click/components/ClearModal";
 import { ClearAnimation } from "@/components/animation/ClearAnimation";
-import { CoinEffect } from "@/components/click/CoinEffect";
-import MessageBox from "@/components/click/MessageBox";
+import { CoinEffect } from "@/app/game/click/components/CoinEffect";
+import MessageBox from "@/app/game/click/components/MessageBox";
 import { AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
-import { BgmController } from "@/components/click/BgmController";
+import { BgmController } from "@/app/game/click/components/BgmController";
 
 export default function ClickGamePage() {
   const router = useRouter();

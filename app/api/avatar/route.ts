@@ -18,37 +18,32 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // ★ AvatarPicker から送られてくるデータ
-  const avatar = await req.json();
+  try {
+    // ★ AvatarPicker から送られてくるデータ
+    const avatar = await req.json();
 
-  // ★ mode によって保存内容が変わる
-  if (avatar.mode === "color") {
-    // カラーモード
-    await db
-      .update(appUsers)
-      .set({
-        avatar: {
-          mode: "color",
-          hair: avatar.hair,
-          clothes: avatar.clothes,
-          bg: avatar.bg,
-        },
-      })
-      .where(eq(appUsers.id, user.id));
-  } else if (avatar.mode === "image") {
-    // 画像モード
+    // ★ 修正: colorモードの分岐を削除し、imageモードのみに統一
+    // avatar.image が "1n" などの旧形式なら "n" を消して保存するガード処理付き
+    const cleanImageId = avatar.image
+      ? String(avatar.image).replace("n", "")
+      : "1";
+
     await db
       .update(appUsers)
       .set({
         avatar: {
           mode: "image",
-          image: avatar.image,
+          image: cleanImageId,
         },
       })
       .where(eq(appUsers.id, user.id));
-  } else {
-    return NextResponse.json({ error: "Invalid avatar mode" }, { status: 400 });
-  }
 
-  return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, image: cleanImageId });
+  } catch (error) {
+    console.error("Avatar Update Error:", error);
+    return NextResponse.json(
+      { error: "Internal Server Error" },
+      { status: 500 },
+    );
+  }
 }

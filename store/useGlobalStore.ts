@@ -1,23 +1,40 @@
+// @/store/useGlobalStore.ts
 import { create } from "zustand";
 
 export type GameType = "none" | "highlow" | "clash" | "bj";
+
+// ★ 修正1: 不要な項目を完全に削除してスッキリさせる
+export interface Avatar {
+  mode: "image"; // "color" はもう使わないので固定
+  image: string; // "1", "2", "3" の数字のみが入る
+}
 
 interface GlobalState {
   streak: number;
   coins: number;
   currentBet: number;
   activeGame: GameType;
-  // 各ゲームごとのベストスコアを保持するオブジェクト
   gameBestScores: Record<string, number>;
+
+  // アバターの状態
+  avatar: Avatar;
 
   // アクション
   addStreak: () => void;
   resetStreak: () => void;
   setGame: (game: GameType) => void;
-  syncData: (coins: number, scores: { game: string; value: number }[]) => void;
+  // DBからの同期（avatarDataも受け取れるように！）
+  syncData: (
+    coins: number,
+    scores: { game: string; value: number }[],
+    avatarData?: Partial<Avatar>,
+  ) => void;
   placeBet: (amount: number) => boolean;
   resolveWin: (multiplier: number) => void;
   resolveLoss: () => void;
+
+  // アバターを変更するアクション
+  setAvatar: (newAvatar: Avatar) => void;
 }
 
 export const useGlobalStore = create<GlobalState>((set, get) => ({
@@ -31,11 +48,15 @@ export const useGlobalStore = create<GlobalState>((set, get) => ({
     bj: 0,
   },
 
-  // 連勝を1増やす + ベスト記録の更新チェック
+  // ★ 修正2: 初期値からも古い項目を削除
+  avatar: {
+    mode: "image",
+    image: "1", // 最初は ID "1" (ラビィ)
+  },
+
   addStreak: () =>
     set((s) => {
       if (s.activeGame === "none") return {};
-
       const newStreak = s.streak + 1;
       const currentBest = s.gameBestScores[s.activeGame] || 0;
       const isNewRecord = newStreak > currentBest;
@@ -54,11 +75,10 @@ export const useGlobalStore = create<GlobalState>((set, get) => ({
   setGame: (game) =>
     set({
       activeGame: game,
-      streak: 0, // ゲームを切り替えたら現在の連勝はリセット
+      streak: 0,
     }),
 
-  // DBからのデータ読み込み用
-  syncData: (coins, scoresList) => {
+  syncData: (coins, scoresList, avatarData) => {
     const scoresMap: Record<string, number> = {
       highlow: 0,
       clash: 0,
@@ -67,13 +87,15 @@ export const useGlobalStore = create<GlobalState>((set, get) => ({
     scoresList.forEach((s) => {
       scoresMap[s.game] = s.value;
     });
-    set({
+
+    set((state) => ({
       coins,
       gameBestScores: scoresMap,
-    });
+      // DBにアバター情報があれば合体させる
+      avatar: avatarData ? { ...state.avatar, ...avatarData } : state.avatar,
+    }));
   },
 
-  // チップを賭ける
   placeBet: (amount) => {
     const { coins } = get();
     if (coins < amount) return false;
@@ -85,10 +107,8 @@ export const useGlobalStore = create<GlobalState>((set, get) => ({
     return true;
   },
 
-  // 勝利処理（配当を渡す）
   resolveWin: (multiplier) => {
     const { currentBet, coins } = get();
-    // 倍率に応じた配当を計算 (例: 100ベットで2倍なら200コイン戻る)
     const payout = Math.floor(currentBet * multiplier);
 
     set({
@@ -97,11 +117,12 @@ export const useGlobalStore = create<GlobalState>((set, get) => ({
     });
   },
 
-  // 敗北処理
   resolveLoss: () => {
     set({
       currentBet: 0,
-      streak: 0, // 連勝ストップ
+      streak: 0,
     });
   },
+
+  setAvatar: (newAvatar: Avatar) => set({ avatar: newAvatar }),
 }));

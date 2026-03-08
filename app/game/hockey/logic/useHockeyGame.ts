@@ -10,6 +10,7 @@ export function useHockeyGame() {
 
   const [started, setStarted] = useState(false);
   const [showReset, setShowReset] = useState(false);
+  const [resultState, setResultState] = useState<"win" | "lose">("lose"); // ★ 追加
   const [, setTick] = useState(0);
   const [isPortrait, setIsPortrait] = useState(false);
 
@@ -43,26 +44,30 @@ export function useHockeyGame() {
   // --- 共通のSE再生処理 ---
   const playHitSE = useCallback(() => {
     const audio = hitPool.current[hitIndex.current];
-    audio.currentTime = 0;
-    audio.play();
-    hitIndex.current = (hitIndex.current + 1) % hitPool.current.length;
+    if (audio) {
+      audio.currentTime = 0;
+      audio.play();
+      hitIndex.current = (hitIndex.current + 1) % hitPool.current.length;
+    }
   }, []);
 
   const playWallSE = useCallback(() => {
     const audio = wallPool.current[wallIndex.current];
-    audio.currentTime = 0;
-    audio.play();
-    wallIndex.current = (wallIndex.current + 1) % wallPool.current.length;
+    if (audio) {
+      audio.currentTime = 0;
+      audio.play();
+      wallIndex.current = (wallIndex.current + 1) % wallPool.current.length;
+    }
   }, []);
 
-  // --- ゴール時の処理（ここでは音とUI表示のみ） ---
+  // --- ゴール時の処理 ---
   const handleGoal = useCallback((type: "win" | "lose") => {
+    setResultState(type); // ★ 勝敗状態を保存
     if (type === "win") {
-      playSound("/sounds/win.mp3", 1); // 勝ち音
+      playSound("/sounds/win.mp3", 1);
     } else {
-      playSound("/sounds/lose.mp3", 1); // 負け音
+      playSound("/sounds/lose.mp3", 1);
     }
-
     setShowReset(true);
   }, []);
 
@@ -86,12 +91,7 @@ export function useHockeyGame() {
     );
 
     return () => {
-      [
-        ...hitPool.current,
-        ...wallPool.current,
-        goalHighSE.current,
-        goalLowSE.current,
-      ].forEach((a) => {
+      [...hitPool.current, ...wallPool.current].forEach((a) => {
         if (a) {
           a.pause();
           a.src = "";
@@ -131,36 +131,26 @@ export function useHockeyGame() {
     const logic = logicRef.current;
     if (!logic || !fieldRef.current) return;
 
-    // 1. 今回の最高記録を保存
     if (logic.maxReflectCount > 0) {
       saveHighScore(logic.maxReflectCount);
     }
 
-    // 2. reflectCount だけリセット（maxReflectCount はリセットしない）
     logic.reflectCount = 0;
     logic.isGameOver = false;
-
-    // 3. ラウンドのリセット（パックの位置や速度の初期化）
     logic.resetRound(true);
 
-    // 4. UIの状態を戻す
     setShowReset(false);
     setTick((t) => t + 1);
   };
+
   const backGame = () => {
     const logic = logicRef.current;
-    if (!logic) return;
-
-    // ★ ここでスコア保存
-    if (logic.maxReflectCount > 0) {
+    if (logic && logic.maxReflectCount > 0) {
       saveHighScore(logic.maxReflectCount);
     }
-
-    // UI を閉じるだけ
     setShowReset(false);
   };
 
-  // 操作
   const handleMove = (e: React.MouseEvent) => {
     if (!logicRef.current || !fieldRef.current) return;
     const rect = fieldRef.current.getBoundingClientRect();
@@ -189,6 +179,7 @@ export function useHockeyGame() {
   return {
     started,
     showReset,
+    resultState, // ★ 追加
     logic: logicRef.current,
     fieldRef,
     startGame,

@@ -2,16 +2,16 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import BracketUI from "@/components/janken/BracketUI";
-import { BgmController } from "@/components/click/BgmController";
-import { StageHeader } from "@/components/janken/StageHeader";
-import { WinStars } from "@/components/janken/WinStars";
-import { ResultOverlay } from "@/components/janken/ResultOverlay";
-import { JankenButtons } from "@/components/janken/JankenButtons";
-import { SkillButton } from "@/components/janken/SkillButton";
-import { JankenAnimation } from "@/components/janken/JankenAnimation";
+import BracketUI from "@/app/game/janken/components/BracketUI";
+import { BgmController } from "@/app/game/click/components/BgmController";
+import { StageHeader } from "@/app/game/janken/components/StageHeader";
+import { WinStars } from "@/app/game/janken/components/WinStars";
+import { ResultOverlay } from "@/app/game/janken/components/ResultOverlay";
+import { JankenButtons } from "@/app/game/janken/components/JankenButtons";
+import { SkillButton } from "@/app/game/janken/components/SkillButton";
+import { JankenAnimation } from "@/app/game/janken/components/JankenAnimation";
 import { useJankenGame } from "./logic/useJankenGame";
-import { CountHeader } from "@/components/janken/CountHeader";
+import { CountHeader } from "@/app/game/janken/components/CountHeader";
 
 export default function JankenPage() {
   const router = useRouter();

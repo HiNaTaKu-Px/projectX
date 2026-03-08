@@ -1,6 +1,6 @@
 // @/components/x/GameLayout.tsx
-import { useState } from "react"; // useStateを追加
-import { useGlobalStore } from "@/app/game/x/useGlobalStore";
+import { useState } from "react";
+import { useGlobalStore } from "@/app/game/x/logic/useGlobalStore";
 
 interface GameLayoutProps {
   score: number;
@@ -14,13 +14,10 @@ export function GameLayout({ score, onQuit, children }: GameLayoutProps) {
   const gameBestScores = useGlobalStore((s) => s.gameBestScores);
   const currentBest = gameBestScores[activeGame] || 0;
 
-  // ローディング状態を内部で管理
   const [isExiting, setIsExiting] = useState(false);
 
-  // QUITボタンが押された時の共通処理
   const handleQuitClick = () => {
     setIsExiting(true);
-    // 0.6秒待ってから、親から渡された本来の終了処理を呼ぶ
     setTimeout(() => {
       onQuit();
     }, 600);
@@ -45,15 +42,22 @@ export function GameLayout({ score, onQuit, children }: GameLayoutProps) {
         <div className="flex flex-col gap-2">
           <div className="flex items-center gap-3">
             <button
-              onClick={handleQuitClick} // 内部の関数を呼ぶように変更
+              onClick={handleQuitClick}
               disabled={isExiting}
               className="px-4 py-2 bg-black/40 hover:bg-red-600 rounded-lg border border-white/20 transition-all text-sm font-bold text-white shadow-lg active:scale-95 disabled:opacity-50"
             >
               QUIT
             </button>
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-yellow-900/40 border border-yellow-500/50 rounded-full backdrop-blur-md shadow-lg">
-              <span className="text-yellow-400 text-sm">🪙</span>
-              <span className="text-white font-black text-sm tabular-nums">
+
+            {/* --- ★ ここをMenuViewと同じスタイルに変更 --- */}
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-black/40 border border-yellow-500/40 rounded-full backdrop-blur-md shadow-[0_0_15px_rgba(234,179,8,0.1)]">
+              {/* Windows対応の自作コインアイコン */}
+              <div className="w-5 h-5 bg-yellow-400 rounded-full flex items-center justify-center border border-yellow-200 shadow-[0_0_5px_rgba(234,179,8,0.5)]">
+                <span className="text-yellow-900 font-black text-[10px] leading-none">
+                  C
+                </span>
+              </div>
+              <span className="text-white font-black text-sm tabular-nums tracking-tight">
                 {coins.toLocaleString()}
               </span>
             </div>
@@ -61,21 +65,24 @@ export function GameLayout({ score, onQuit, children }: GameLayoutProps) {
         </div>
 
         {/* スコアボード */}
-        <div className="flex flex-col items-end">
-          <div className="bg-white/10 backdrop-blur-xl px-4 py-2 rounded-2xl border border-white/20 shadow-2xl min-w-[110px]">
-            <div className="text-right border-b border-white/10 pb-1 mb-1">
-              <p className="text-[9px] font-black opacity-50 uppercase text-blue-300 tracking-tighter">
+        <div className="flex flex-col items-end shrink-0">
+          <div className="bg-black/40 backdrop-blur-xl px-5 py-3 rounded-2xl border border-white/20 shadow-[0_0_20px_rgba(0,0,0,0.3)] min-w-[130px]">
+            {/* 現在の連勝 (Streak) */}
+            <div className="text-right border-b border-white/10 pb-2 mb-2">
+              <p className="text-[10px] font-black opacity-60 uppercase text-blue-400 tracking-[0.2em] leading-none mb-1">
                 Streak
               </p>
-              <p className="text-2xl font-black tabular-nums text-white leading-none">
+              <p className="text-4xl font-[1000] tabular-nums text-white leading-none drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]">
                 {score}
               </p>
             </div>
-            <div className="text-right">
-              <p className="text-[8px] font-black opacity-40 uppercase text-white tracking-tighter">
+
+            {/* 自己ベスト (Best) */}
+            <div className="text-right flex items-end justify-between gap-4">
+              <p className="text-[9px] font-black opacity-50 uppercase text-white tracking-widest leading-none pb-0.5">
                 Best
               </p>
-              <p className="text-sm font-black tabular-nums text-yellow-500 leading-none">
+              <p className="text-xl font-black tabular-nums text-yellow-500 leading-none">
                 {currentBest}
               </p>
             </div>

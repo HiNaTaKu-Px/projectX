@@ -1,10 +1,10 @@
 "use client";
 
 import { useEscapeGame } from "@/app/game/escape/logic/useEscapeGame";
-import { ScoreHeader } from "@/components/escape/ScoreHeader";
-import { StartButton } from "@/components/escape/StartButton";
-import { ResetButton } from "@/components/hockey/ResetButton";
-import { Joystick } from "@/components/escape/Joystick";
+import { ScoreHeader } from "@/app/game/escape/components/ScoreHeader";
+import { StartButton } from "@/app/game/escape/components/StartButton";
+import { ResetButton } from "@/app/game/hockey/components/ResetButton";
+import { Joystick } from "@/app/game/escape/components/Joystick";
 import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 

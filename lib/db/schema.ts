@@ -9,20 +9,16 @@ export const appUsers = pgTable("app_users", {
   createdAt: timestamp("created_at").defaultNow(),
   items: text("items"),
   stockItems: text("stockItems"),
+  // ★ 修正: avatar カラムを image 中心に整理
   avatar: json("avatar")
     .$type<{
-      mode: "color" | "image";
-      hair?: string;
-      clothes?: string;
-      bg?: string;
-      image?: string;
+      mode: "image"; // color モードは廃止
+      image: string; // "1", "2", "3" など
     }>()
     .notNull()
     .default({
-      mode: "color",
-      hair: "#000000",
-      clothes: "#ffffff",
-      bg: "#cccccc",
+      mode: "image",
+      image: "1", // 初期値はラビィ（ID:1）
     }),
 });
 
@@ -50,7 +46,6 @@ export const scores = pgTable("scores", {
 });
 
 // --- Posts（掲示板・ボード投稿用） ---
-// これを追加することで "Export posts doesn't exist" エラーが消えます
 export const posts = pgTable("posts", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
   userId: text("user_id")

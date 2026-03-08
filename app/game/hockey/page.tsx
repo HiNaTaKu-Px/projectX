@@ -2,10 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { useHockeyGame } from "@/app/game/hockey/logic/useHockeyGame";
-import { ScoreHeader } from "@/components/hockey/ScoreHeader";
-import { StartButton } from "@/components/hockey/StartButton";
-import { ResetButton } from "@/components/hockey/ResetButton";
-import { GameField } from "@/components/hockey/GameField";
+import { ScoreHeader } from "@/app/game/hockey/components/ScoreHeader";
+import { StartButton } from "@/app/game/hockey/components/StartButton";
+import { ResetButton } from "@/app/game/hockey/components/ResetButton";
+import { GameField } from "@/app/game/hockey/components/GameField";
 import { useRouter } from "next/navigation";
 
 export default function HockeyPage() {
@@ -14,6 +14,7 @@ export default function HockeyPage() {
   const {
     started,
     showReset,
+    resultState, // ★ ロジックから勝敗ステートを取得
     logic,
     fieldRef,
     startGame,
@@ -24,12 +25,13 @@ export default function HockeyPage() {
   } = useHockeyGame();
 
   const handleBack = () => {
-    backGame(); // ★ スコア保存
-    router.back(); // ★ 前のページに戻る
+    backGame(); // スコア保存
+    router.back(); // 前のページに戻る
   };
 
   const [dbMaxScore, setDbMaxScore] = useState(0);
 
+  // ハイスコアの初期取得
   useEffect(() => {
     const fetchHighScore = async () => {
       try {
@@ -48,6 +50,7 @@ export default function HockeyPage() {
     fetchHighScore();
   }, []);
 
+  // DBのスコアと現在のセッションの最高スコアのうち、高い方を表示
   const displayMaxScore = Math.max(dbMaxScore, logic?.maxReflectCount ?? 0);
 
   return (
@@ -59,20 +62,25 @@ export default function HockeyPage() {
         ${started && !showReset ? "md:cursor-none" : "md:cursor-auto"}
       `}
     >
+      {/* スコア表示ヘッダー */}
       <ScoreHeader
         score={logic?.reflectCount ?? 0}
         maxScore={displayMaxScore}
       />
 
+      {/* ゲーム開始前：スタートボタン */}
       {!started && <StartButton onStart={startGame} />}
 
+      {/* ゲームオーバー時：アバター付きリセットボタン（勝敗を渡す） */}
       {showReset && (
         <ResetButton
           onReset={resetGame}
-          onBack={handleBack} // ← ここで戻る
+          onBack={handleBack}
+          resultState={resultState} // ★ ここで win / lose を渡す
         />
       )}
 
+      {/* ゲームフィールド本体 */}
       <GameField
         fieldRef={fieldRef}
         logic={logic}

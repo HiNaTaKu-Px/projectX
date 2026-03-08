@@ -1,4 +1,3 @@
-// app/game/x/actions.ts
 "use server";
 
 import { db } from "@/lib/db/db";
@@ -6,26 +5,40 @@ import { appUsers, scores } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 import { validateRequest } from "@/lib/auth/lucia";
 
+// アバターの型定義
+interface AvatarData {
+  mode: "image";
+  image: string;
+}
+
 export async function saveGameData(
   coins: number,
-  currentStreak: number, // 念のため受け取るが、主にコインと全スコアを優先
+  currentStreak: number,
   activeGame: string,
-  gameBestScores: Record<string, number>, // 追加：全ゲームのベスト記録を受け取る
+  gameBestScores: Record<string, number>,
+  // ★ 追加: アバター情報を受け取れるようにする
+  avatar?: AvatarData,
 ) {
   const { user } = await validateRequest();
   if (!user) throw new Error("Unauthorized");
 
   try {
-    // 1. ユーザーの所持コインを更新
-    await db.update(appUsers).set({ coins }).where(eq(appUsers.id, user.id));
+    // 1. ユーザーの所持コインとアバターを更新
+    await db
+      .update(appUsers)
+      .set({
+        coins,
+        // アバターデータがあればセットする
+        ...(avatar && { avatar }),
+      })
+      .where(eq(appUsers.id, user.id));
 
-    // 2. 全ゲームのハイスコアをループで更新
-    const gameEntries = Object.entries(gameBestScores); // [["highlow", 10], ["bj", 5]]
+    // 2. 全ゲームのハイスコアを更新 (既存のループ処理)
+    const gameEntries = Object.entries(gameBestScores);
 
     for (const [gameName, bestValue] of gameEntries) {
       if (gameName === "none" || bestValue === 0) continue;
 
-      // DBに既存のスコアがあるか確認
       const results = await db
         .select()
         .from(scores)
@@ -35,14 +48,12 @@ export async function saveGameData(
       const existingScore = results[0];
 
       if (!existingScore) {
-        // 新規登録
         await db.insert(scores).values({
           userId: user.id,
           game: gameName,
           value: bestValue,
         });
       } else if (bestValue > (existingScore.value ?? 0)) {
-        // 既存スコアより高ければ更新
         await db
           .update(scores)
           .set({ value: bestValue })
@@ -62,12 +73,10 @@ export async function getGameStats() {
   if (!user) throw new Error("Unauthorized");
 
   try {
-    // 1. ユーザーのコイン情報を取得
     const userData = await db.query.appUsers.findFirst({
       where: eq(appUsers.id, user.id),
     });
 
-    // 2. 全ゲームのハイスコアを取得
     const userScores = await db
       .select({
         game: scores.game,
@@ -76,13 +85,15 @@ export async function getGameStats() {
       .from(scores)
       .where(eq(scores.userId, user.id));
 
+    // ★ 修正: 保存されている avatar オブジェクトも返す
     return {
       ok: true,
       coins: userData?.coins ?? 0,
-      scores: userScores, // [{ game: "highlow", value: 10 }, ...]
+      avatar: userData?.avatar, // アバター情報
+      scores: userScores,
     };
   } catch (error) {
     console.error("Fetch Error:", error);
-    return { ok: false, coins: 0, scores: [] };
+    return { ok: false, coins: 0, scores: [], avatar: null };
   }
 }

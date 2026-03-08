@@ -1,4 +1,4 @@
-import GachaButton from "@/components/click/GachaButton";
+import GachaButton from "@/app/game/click/components/GachaButton";
 
 export function GachaPanel({
   currentCoins,
