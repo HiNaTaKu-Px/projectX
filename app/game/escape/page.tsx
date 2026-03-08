@@ -3,7 +3,7 @@
 import { useEscapeGame } from "@/app/game/escape/logic/useEscapeGame";
 import { ScoreHeader } from "@/app/game/escape/components/ScoreHeader";
 import { StartButton } from "@/app/game/escape/components/StartButton";
-import { ResetButton } from "@/app/game/hockey/components/ResetButton";
+import { ResetButton } from "@/app/game/hockey/components/ResetButton"; // 共有コンポーネント
 import { Joystick } from "@/app/game/escape/components/Joystick";
 import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
@@ -19,21 +19,21 @@ export default function EscapePage() {
     reset,
     handleStickMove,
     handleStickEnd,
-    backGame, // ← ★ これを受け取る
+    backGame,
   } = useEscapeGame();
 
   const router = useRouter();
 
-  // ★ BACK ボタンの処理
+  // BACK ボタンの処理
   const handleBack = () => {
-    backGame(); // ← スコア保存
-    router.back(); // ← 前のページへ戻る
+    backGame(); // スコア保存
+    router.back();
   };
 
-  // --- DBから取得したハイスコア ---
+  // DBから取得したハイスコア
   const [dbMaxScore, setDbMaxScore] = useState(0);
 
-  // --- 初回だけハイスコア取得 ---
+  // 初回だけハイスコア取得
   const fetchedRef = useRef(false);
 
   useEffect(() => {
@@ -57,7 +57,10 @@ export default function EscapePage() {
     fetchHighScore();
   }, []);
 
-  const displayMaxScore = Math.max(dbMaxScore, maxScore);
+  // 表示用のハイスコア計算
+  // DB、セッション最高値、現在のスコアの3つから最大値を出すことで、
+  // UI上のハイスコア表示が常に最新になります。
+  const displayMaxScore = Math.max(dbMaxScore, maxScore, score);
 
   return (
     <div
@@ -83,13 +86,16 @@ export default function EscapePage() {
 
       <canvas ref={canvasRef} className="touch-none flex-1" />
 
+      {/* --- リザルト画面（アバター対応） --- */}
       {gameOver && (
         <ResetButton
           onReset={() => {
             const canvas = canvasRef.current;
             if (canvas) reset(canvas.width, canvas.height);
           }}
-          onBack={handleBack} // ← ★ BACK ボタンを追加
+          onBack={handleBack}
+          // スコアが50以上なら win (笑顔)、未満なら lose (悲しみ)
+          resultState={score >= 50 ? "win" : "lose"}
         />
       )}
 
