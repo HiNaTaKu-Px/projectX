@@ -1,46 +1,53 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import { AuthInput } from "@/components/auth/AuthInput";
 import { AuthButton } from "@/components/auth/AuthButton";
 import { Popup } from "@/components/auth/Popup";
 import { AuthCard } from "@/components/auth/AuthCard";
-import { authClient } from "@/lib/auth/auth-client";
+// インポートパスをこれまでの設定 (@/lib/auth-client) に合わせます
+import { signUp } from "@/lib/auth-client";
 
 export default function RegisterPage() {
-  // メールアドレス形式にするため、変数名を email に戻します
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [popup, setPopup] = useState<"success" | "error" | "duplicate" | null>(
-    null,
-  );
+  const [popup, setPopup] = useState<"success" | "error" | "duplicate" | null>(null);
+  const [isPending, setIsPending] = useState(false);
+  
   const router = useRouter();
+  const params = useParams();
+  const locale = params.locale as string; // 現在の言語(ja/en)を取得
 
   const handleRegister = async () => {
-    // 標準の signUp.email を使用。これで型エラーは完全に消えます。
-    const { data, error } = await authClient.signUp.email({
-      email: email, // 入力されたメールアドレス
-      password: password, // 入力されたパスワード
-      name: email.split("@")[0], // 名前の入力欄がないので、とりあえずメアドの前半を名前に
+    setIsPending(true);
+    // lib/auth-client で export した signUp を直接使用
+    const { data, error } = await signUp.email({
+      email: email,
+      password: password,
+      // 名前が必須なので、メアドの @ より前を仮の名前として登録
+      name: email.split("@")[0] || "User", 
     });
 
     if (error) {
-      // Better Auth の標準エラーコードで重複チェック
+      // Better Auth の標準エラーコード
       if (error.code === "USER_ALREADY_EXISTS") {
         setPopup("duplicate");
       } else {
         console.error("SignUp Error:", error);
         setPopup("error");
       }
+      setIsPending(false);
       return;
     }
 
     setPopup("success");
 
+    // 成功時の処理
     setTimeout(() => {
-      // 登録と同時にログインされる設定（autoSignIn: true）なので、そのままトップへ
-      window.location.href = "/";
+      // ✅ dashboard ではなく ホームページ (/) へ移動
+      router.push(`/${locale}/`);
+      router.refresh();
     }, 1200);
   };
 
@@ -48,21 +55,34 @@ export default function RegisterPage() {
     <div className="min-h-screen flex flex-col items-center justify-center bg-green-50">
       <AuthCard title="アカウント作成">
         <AuthInput
-          type="email" // 正しく email に設定
-          placeholder="メールアドレス (test@example.com等)"
+          type="email"
+          placeholder="メールアドレス (test@example.com)"
           value={email}
           onChange={setEmail}
         />
         <AuthInput
           type="password"
-          placeholder="パスワード"
+          placeholder="パスワード (8文字以上)"
           value={password}
           onChange={setPassword}
         />
-        <AuthButton label="登録" color="sky" onClick={handleRegister} />
+        <AuthButton 
+          label={isPending ? "作成中..." : "登録"} 
+          color="sky" 
+          onClick={handleRegister} 
+          disabled={isPending}
+        />
       </AuthCard>
 
-      {/* ポップアップ */}
+      {/* ログイン画面へ戻るボタンも追加しておくと親切です */}
+      <button
+        onClick={() => router.push(`/${locale}/login`)}
+        className="mt-5 text-sm text-gray-500 hover:underline"
+      >
+        すでにアカウントをお持ちの方はこちら
+      </button>
+
+      {/* ポップアップ表示ロジック */}
       {popup === "success" && (
         <Popup
           type="success"

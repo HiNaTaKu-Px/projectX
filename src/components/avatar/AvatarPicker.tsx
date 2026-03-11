@@ -1,10 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { useGlobalStore, Avatar } from "@/store/useGlobalStore"; // パスを修正
+import { useGlobalStore, Avatar } from "@/store/useGlobalStore";
 import { CHARACTERS } from "@/components/avatar/avatarData";
-import { authClient } from "@/lib/auth/auth-client"; // ★ Better Auth クライアントを追加
-import { useRouter } from "next/navigation";
+import { authClient } from "@/lib/auth-client";
+import { refreshSessionAction } from "@/lib/actions/auth"; // 上で作ったアクション
 
 export function AvatarPicker({
   initial,
@@ -15,7 +15,6 @@ export function AvatarPicker({
   onSave: (a: Avatar) => void;
   onClose?: () => void;
 }) {
-  const router = useRouter();
   const setGlobalAvatar = useGlobalStore((state) => state.setAvatar);
 
   const [avatar, setAvatar] = useState<Avatar>(
@@ -25,45 +24,47 @@ export function AvatarPicker({
     },
   );
 
-  const [isUpdating, setIsUpdating] = useState(false); // 保存中のローディング状態
+  const [isUpdating, setIsUpdating] = useState(false);
   const [savedPopup, setSavedPopup] = useState(false);
 
   const avatarIds = ["1", "2", "3"];
 
-// AvatarPicker.tsx 内の該当箇所
-const handleSave = async () => {
-  setIsUpdating(true);
-  try {
-    // TypeScriptの型チェックを回避しつつ、実行時には正しく 'avatar' フィールドを送信する
-    const { data, error } = await (authClient.updateUser as any)({
-      avatar: avatar,
-    });
+  const handleSave = async () => {
+    setIsUpdating(true);
+    try {
+      // 1. Better Auth クライアント経由でDBアップデート
+      const { data, error } = await authClient.updateUser({
+        // @ts-ignore
+        avatar: avatar,
+      });
 
-    if (error) {
-      console.error("Update Error:", error);
-      alert("保存に失敗しました。");
-      return;
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      // 2. サーバーアクションを実行してサーバー側のセッションキャッシュを更新
+      await refreshSessionAction();
+
+      // 3. クライアント側の状態(Zustand)を更新
+      onSave(avatar);
+      setGlobalAvatar(avatar);
+
+      setSavedPopup(true);
+    } catch (err) {
+      console.error("Avatar update error:", err);
+      alert("保存中にエラーが発生しました。");
+    } finally {
+      setIsUpdating(false);
     }
+  };
 
-    onSave(avatar);
-    setGlobalAvatar(avatar);
-    
-    setSavedPopup(true);
-    router.refresh(); 
-
-  } catch (err) {
-    console.error("Avatar update error:", err);
-  } finally {
-    setIsUpdating(false);
-  }
-}; 
   return (
     <div className="relative space-y-4 p-4 text-black bg-white rounded-3xl border-4 border-gray-100 shadow-xl max-w-sm mx-auto">
-      {/* 閉じるボタン */}
       {onClose && (
         <button
           onClick={onClose}
-          className="absolute top-3 right-3 text-gray-400 hover:text-black text-xl font-bold p-2 transition-colors z-10"
+          disabled={isUpdating}
+          className="absolute top-3 right-3 text-gray-400 hover:text-black text-xl font-bold p-2 z-10"
         >
           ✕
         </button>
@@ -83,7 +84,7 @@ const handleSave = async () => {
                 setSavedPopup(false);
                 onClose?.();
               }}
-              className="px-10 py-3 bg-green-500 text-white rounded-2xl font-black hover:bg-green-600 w-full transition-all active:scale-95 shadow-[0_4px_0_rgb(21,128,61)]"
+              className="px-10 py-3 bg-green-500 text-white rounded-2xl font-black hover:bg-green-600 w-full shadow-[0_4px_0_rgb(21,128,61)]"
             >
               OK
             </button>
@@ -91,7 +92,7 @@ const handleSave = async () => {
         </div>
       )}
 
-      {/* プレビュー表示 */}
+      {/* プレビュー */}
       <div className="w-32 h-32 mx-auto rounded-[2rem] shadow-inner overflow-hidden flex items-center justify-center bg-gray-50 border-4 border-gray-100">
         <img
           src={`/avatars/${avatar.image}.png`}
@@ -100,7 +101,7 @@ const handleSave = async () => {
         />
       </div>
 
-      {/* キャラクター選択エリア */}
+      {/* キャラクター選択 */}
       <div className="space-y-3 bg-gray-50 p-4 rounded-[1.5rem]">
         <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">
           Select Your Hero
@@ -109,12 +110,13 @@ const handleSave = async () => {
           {avatarIds.map((id) => (
             <button
               key={id}
+              type="button"
               disabled={isUpdating}
               onClick={() => setAvatar({ ...avatar, image: id })}
-              className={`relative border-4 rounded-2xl p-2 transition-all overflow-hidden bg-white ${
+              className={`relative border-4 rounded-2xl p-2 transition-all bg-white ${
                 avatar.image === id
                   ? "border-green-500 bg-green-50 scale-105 shadow-md"
-                  : "border-gray-200 opacity-60 hover:opacity-100 hover:border-gray-300"
+                  : "border-gray-200 opacity-60 hover:opacity-100"
               }`}
             >
               <img
@@ -134,8 +136,8 @@ const handleSave = async () => {
         onClick={handleSave}
         disabled={isUpdating}
         className={`w-full py-4 rounded-2xl font-black text-lg transition-all shadow-[0_5px_0_rgb(30,58,138)] active:shadow-none active:translate-y-1 ${
-          isUpdating 
-            ? "bg-gray-400 cursor-not-allowed" 
+          isUpdating
+            ? "bg-gray-400 cursor-not-allowed translate-y-1 shadow-none"
             : "bg-blue-600 text-white hover:bg-blue-700"
         }`}
       >

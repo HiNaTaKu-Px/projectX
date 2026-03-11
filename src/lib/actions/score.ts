@@ -2,7 +2,7 @@
 
 import { db } from "@/lib/db/db";
 import { scores, appUsers } from "@/lib/db/schema";
-import { auth } from "@/lib/auth/auth";
+import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { eq, and, sql, desc } from "drizzle-orm"; // desc を追加
 
@@ -25,9 +25,10 @@ export async function getGameProfile() {
 
   if (!userData) return null;
 
-  const jankenWin = gameScores.find((g) => g.game === "janken_wins")?.value ?? 0;
+  const jankenWin =
+    gameScores.find((g) => g.game === "janken_wins")?.value ?? 0;
   const otherGames = gameScores.filter(
-    (g) => g.game !== "janken_wins" && g.game !== "janken_highscore"
+    (g) => g.game !== "janken_wins" && g.game !== "janken_highscore",
   );
 
   return {
@@ -142,7 +143,8 @@ export async function updatePlayerData({
   const updatePayload: any = {};
   if (coins !== undefined) updatePayload.coins = coins;
   if (items !== undefined) updatePayload.items = JSON.stringify(items);
-  if (stockItems !== undefined) updatePayload.stockItems = JSON.stringify(stockItems);
+  if (stockItems !== undefined)
+    updatePayload.stockItems = JSON.stringify(stockItems);
 
   await db
     .update(appUsers)
@@ -157,23 +159,27 @@ export async function updatePlayerData({
  */
 export async function getRankings() {
   const [clickRanking, jankenWins, hockeyTop3, escapeTop3] = await Promise.all([
-    db.select({ email: appUsers.email, value: appUsers.coins })
+    db
+      .select({ email: appUsers.email, value: appUsers.coins })
       .from(appUsers)
       .orderBy(desc(appUsers.coins))
       .limit(3),
-    db.select({ email: appUsers.email, value: scores.value })
+    db
+      .select({ email: appUsers.email, value: scores.value })
       .from(scores)
       .leftJoin(appUsers, eq(scores.userId, appUsers.id))
       .where(eq(scores.game, "janken_wins"))
       .orderBy(desc(scores.value))
       .limit(3),
-    db.select({ email: appUsers.email, value: scores.value })
+    db
+      .select({ email: appUsers.email, value: scores.value })
       .from(scores)
       .leftJoin(appUsers, eq(scores.userId, appUsers.id))
       .where(eq(scores.game, "hockey"))
       .orderBy(desc(scores.value))
       .limit(3),
-    db.select({ email: appUsers.email, value: scores.value })
+    db
+      .select({ email: appUsers.email, value: scores.value })
       .from(scores)
       .leftJoin(appUsers, eq(scores.userId, appUsers.id))
       .where(eq(scores.game, "escape"))
