@@ -7,10 +7,20 @@ const intlMiddleware = createMiddleware({
   localeDetection: true,
 });
 
-// ✅ 関数名を middleware から proxy に変更し、default export にします
 export default async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  
+
+  // 1. 【最優先】静的ファイルやAPIへのアクセスは、認証ロジックを通さず即座に終了
+  // 拡張子（.）が含まれるパスや、/_next/, /api/ などはここでスルーさせます
+  if (
+    pathname.includes('.') || 
+    pathname.startsWith('/_next') || 
+    pathname.startsWith('/api') ||
+    pathname.startsWith('/favicon.ico')
+  ) {
+    return intlMiddleware(request);
+  }
+
   // Better Auth のセッションクッキーを確認
   const sessionCookie = request.cookies.get("better-auth.session_token") || 
                         request.cookies.get("__Secure-better-auth.session_token");
@@ -20,14 +30,14 @@ export default async function proxy(request: NextRequest) {
   const segments = pathname.split("/");
   const locale = ["ja", "en"].includes(segments[1]) ? segments[1] : "ja";
 
-  // 1. 認証が必要な範囲
+  // 2. 認証が必要な範囲
   const isProtectedPage = 
     purePathname === "/" || 
     purePathname.startsWith("/dashboard") || 
     purePathname.startsWith("/game") ||
-    purePathname.startsWith("/ranking"); // ランキングも追加しておくと安心です
+    purePathname.startsWith("/ranking");
 
-  // 2. 認証済みなら表示させない範囲
+  // 3. 認証済みなら表示させない範囲（ログイン・会員登録系）
   const isAuthPage = 
     purePathname.startsWith("/login") || 
     purePathname.startsWith("/register") || 
@@ -35,24 +45,24 @@ export default async function proxy(request: NextRequest) {
 
   // --- 判定ロジック ---
 
-  // 【A】未ログインで保護ページへアクセス → ログイン画面へ
+  // 【A】未ログインで保護ページへアクセス → ログイン画面へリダイレクト
   if (!sessionCookie && isProtectedPage) {
-    // 無限ループ防止のためログインページ自身でないことを確認
     if (!isAuthPage) {
       return NextResponse.redirect(new URL(`/${locale}/login`, request.url));
     }
   }
 
-  // 【B】ログイン済みでログイン画面へアクセス → トップ（ゲーム島）へ
+  // 【B】ログイン済みでログイン画面へアクセス → トップ（ゲーム島）へリダイレクト
   if (sessionCookie && isAuthPage) {
     return NextResponse.redirect(new URL(`/${locale}/`, request.url));
   }
 
-  // 多言語対応のミドルウェアを実行
+  // 最後に多言語ミドルウェアを実行（パスの書き換えなど）
   return intlMiddleware(request);
 }
 
 export const config = {
-  // 静的ファイルやAPI、Vercelの内部パスを除外
-  matcher: ["/((?!api|_next|_vercel|[\\w-]+\\.\\w+).*)"],
+  // ミドルウェアを起動させるパスのパターンを指定
+  // 静的ファイル（拡張子あり）を最初から除外する正規表現に更新
+  matcher: ["/((?!api|_next|_vercel|.*\\..*).*)"],
 };

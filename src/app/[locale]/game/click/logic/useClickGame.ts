@@ -1,11 +1,17 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import { authClient } from "@/lib/auth-client"; // Better Auth
-import { saveGameData, getGameProfile } from "@/lib/actions/click"; // サーバーアクション
+import { useState, useRef } from "react";
 
-export function useClickGame() {
-  const [coins, setCoins] = useState<number>(0);
+// ★ 引数に initialCoins を追加（デフォルトは0）
+export function useClickGame(initialCoins: number = 0) {
+  // ★ 初期値を 0 から initialCoins に変更
+  const [coins, setCoins] = useState<number>(initialCoins);
+
+  // -----------------------------
+  // ★ 追加: 保存が必要かどうかの判定フラグ
+  // -----------------------------
+  const isDirty = coins !== initialCoins;
+
   const [items, setItems] = useState<(string | null)[]>(Array(7).fill(null));
   const [stockItems, setStockItems] = useState<Record<string, number>>({});
   const [message, setMessage] = useState("");
@@ -15,99 +21,8 @@ export function useClickGame() {
   const [showClearButton, setShowClearButton] = useState(false);
 
   const effectIdRef = useRef(0);
-  // ★ 保存用に常に最新の値を保持するRef
-  const coinsRef = useRef(0);
-  const stockItemsRef = useRef<Record<string, number>>({});
-  const itemsRef = useRef<(string | null)[]>([]);
 
-  // Better Authからセッション取得
-  const { data: session, isPending } = authClient.useSession();
-  const isLoggedIn = !!session?.user;
-
-  // -----------------------------
-  // ★ 1. 初期ロード (DBから復元)
-  // -----------------------------
-  useEffect(() => {
-    if (isPending || !isLoggedIn) return;
-
-    const loadData = async () => {
-      try {
-        const data = await getGameProfile();
-        if (data) {
-          // DBの coins (一番上のカラム) を反映
-          const dbCoins = data.coins ?? 0;
-          setCoins(dbCoins);
-          coinsRef.current = dbCoins;
-
-          // metadata からアイテム情報を復元 (現状のロジックに合わせる)
-          const metadata = data.metadata || {};
-          const loadedStock = metadata.stockItems || {};
-          const loadedItems = metadata.items || Array(7).fill(null);
-          
-          setStockItems(loadedStock);
-          setItems(loadedItems);
-          
-          stockItemsRef.current = loadedStock;
-          itemsRef.current = loadedItems;
-        }
-      } catch (err) {
-        console.error("Load error:", err);
-      }
-    };
-
-    loadData();
-  }, [session?.user.id, isPending, isLoggedIn]);
-
-  // -----------------------------
-  // ★ 2. Refへの同期 (ステート変更時に即座に反映)
-  // -----------------------------
-  useEffect(() => {
-    coinsRef.current = coins;
-    stockItemsRef.current = stockItems;
-    itemsRef.current = items;
-  }, [coins, stockItems, items]);
-
-  // -----------------------------
-  // ★ 3. 保存ロジック (離脱時・三重ガード)
-  // -----------------------------
-  const handleFinalSave = () => {
-    if (!isLoggedIn) return;
-
-    // metadataの中にアイテム情報をまとめて入れる
-    const metadata = {
-      items: itemsRef.current,
-      stockItems: stockItemsRef.current
-    };
-
-    // サーバーアクション呼び出し (投げっぱなしで実行)
-    saveGameData(coinsRef.current, metadata);
-  };
-
-  useEffect(() => {
-    if (!isLoggedIn) return;
-
-    // A: タブ閉じ・リロード
-    window.addEventListener("beforeunload", handleFinalSave);
-
-    // B: タブがバックグラウンドに回った時 (モバイル等で確実)
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === "hidden") {
-        handleFinalSave();
-      }
-    };
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-
-    // C: React内遷移
-    return () => {
-      window.removeEventListener("beforeunload", handleFinalSave);
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
-      handleFinalSave();
-    };
-  }, [isLoggedIn]);
-
-  // -----------------------------
-  // ★ 4. クリック (現状維持)
-  // -----------------------------
+  // --- 3. クリック以降、下のコードは一切変更なし ---
   const getRandomAmount = () => {
     const r = Math.random();
     if (r < 0.7) return 1;
@@ -129,8 +44,10 @@ export function useClickGame() {
   };
 
   // -----------------------------
-  // ★ 5. ガチャ (現状維持)
+  // ★ 4. ガチャ
   // -----------------------------
+  const gachaItems = ["💡ノーマル", "✨レア", "🎇ウルトラ", "🎆レジェンド"];
+
   const getRandomItem = () => {
     const r = Math.random();
     if (r < 0.7) return "💡ノーマル";
@@ -162,6 +79,7 @@ export function useClickGame() {
     setCoins(coins - cost);
 
     const ORDER = ["💡ノーマル", "✨レア", "🎇ウルトラ", "🎆レジェンド"];
+
     const resultCount: Record<string, number> = {};
     for (const item of results) {
       resultCount[item] = (resultCount[item] || 0) + 1;
@@ -175,10 +93,13 @@ export function useClickGame() {
   };
 
   // -----------------------------
-  // ★ 6. アイテム使用 (現状維持)
+  // ★ 5. アイテム使用
   // -----------------------------
   const itemCoinValues: Record<string, number> = {
-    "💡ノーマル": 100, "✨レア": 500, "🎇ウルトラ": 3000, "🎆レジェンド": 10000,
+    "💡ノーマル": 100,
+    "✨レア": 500,
+    "🎇ウルトラ": 3000,
+    "🎆レジェンド": 10000,
   };
 
   const handleUseItem = (itemName: string) => {
@@ -192,6 +113,7 @@ export function useClickGame() {
 
     setStockItems(newStock);
     setCoins(coins + value);
+
     showMessage(`${itemName} を使用して +${value} コイン獲得！`);
   };
 
@@ -200,22 +122,31 @@ export function useClickGame() {
     for (const name in stockItems) {
       total += (itemCoinValues[name] || 0) * stockItems[name];
     }
+
     setStockItems({});
     setCoins(coins + total);
+
     showMessage(`全アイテムを使用して +${total} コイン獲得！`);
   };
 
   // -----------------------------
-  // ★ 7. メッセージ・演出 (現状維持)
+  // ★ 6. メッセージ表示
   // -----------------------------
   const showMessage = (text: string) => {
     setMessage(text);
     setVisible(false);
-    setTimeout(() => setVisible(true), 20);
+
+    setTimeout(() => {
+      setVisible(true);
+    }, 20);
   };
 
+  // -----------------------------
+  // ★ 7. クリア演出
+  // -----------------------------
   const handleClear = () => {
     setShowSuperFormal(true);
+
     setTimeout(() => {
       setShowSuperFormal(false);
       setShowClearButton(true);
@@ -223,7 +154,21 @@ export function useClickGame() {
   };
 
   return {
-    coins, items, stockItems, message, visible, coinEffect, showSuperFormal, showClearButton,
-    handleClick, handleGacha, handleUseItem, useAllItemsAllTypes, handleClear, setCoinEffect,
+    coins,
+    isDirty, // ★ 追加: 変更があったかどうか
+    items,
+    stockItems,
+    message,
+    visible,
+    coinEffect,
+    showSuperFormal,
+    showClearButton,
+
+    handleClick,
+    handleGacha,
+    handleUseItem,
+    useAllItemsAllTypes,
+    handleClear,
+    setCoinEffect,
   };
 }
