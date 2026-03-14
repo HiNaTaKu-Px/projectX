@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { GameLogic } from "./GameLogic";
 import { playSound } from "@//components/sound/Sound";
+import { savehockeyScoreAction } from "./actions";
 
 export function useHockeyGame() {
   const logicRef = useRef<GameLogic | null>(null);
@@ -24,18 +25,12 @@ export function useHockeyGame() {
 
   const frameRef = useRef<number | null>(null);
 
-  // --- DB保存用関数 ---
+// --- DB保存用関数 --- 
+
   const saveHighScore = async (score: number) => {
     try {
-      await fetch("/api/highscore", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          game: "hockey",
-          value: score,
-        }),
-      });
-      console.log("Score saved:", score);
+      await savehockeyScoreAction(score);
+      console.log("Score saved via Action:", score);
     } catch (error) {
       console.error("Error saving high score:", error);
     }

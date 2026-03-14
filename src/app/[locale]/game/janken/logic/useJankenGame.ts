@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { incrementJankenWinAction } from "./actions";
 
 const hands = ["✊", "✌️", "🖐️"];
 
 export function useJankenGame() {
-  const [skillPoints, setSkillPoints] = useState(0);
+  const [skillPoints, setSkillPoints] = useState(60);
   const [playerWin, setPlayerWin] = useState(0);
   const [cpuWin, setCpuWin] = useState(0);
   const [currentStage, setCurrentStage] = useState(0);
@@ -77,16 +78,11 @@ export function useJankenGame() {
       setResultState("win");
       setShowClear(true);
 
-      // ★ 優勝回数を DB に保存
+      // ★ 修正：fetch をやめて Server Action を呼ぶ
       const saveWinCount = async () => {
         try {
-          await fetch("/api/wincount", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              game: "janken_wins", // ← ゲーム名は自由に決めてOK
-            }),
-          });
+          await incrementJankenWinAction(); // 数値を渡す必要はありません（アクション側で+1します）
+          console.log("Win count incremented!");
         } catch (e) {
           console.error("優勝回数の保存に失敗しました", e);
         }
@@ -95,7 +91,6 @@ export function useJankenGame() {
       saveWinCount();
     }
   }, [currentStage]);
-
   useEffect(() => {
     if (cpuWin === 3) {
       setEndMessage("残念…負けてしまった…");

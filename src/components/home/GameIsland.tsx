@@ -1,7 +1,7 @@
 "use client";
 
-import Link from "next/link";
-import { useRef, useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
 
 interface GameIslandProps {
   label: string;
@@ -20,49 +20,65 @@ export function GameIsland({
   icon,
   delay = 0,
 }: GameIslandProps) {
-  const [isHovered, setIsHovered] = useState(false);
+  const router = useRouter();
   const [isVisible, setIsVisible] = useState(false);
-  const ref = useRef<HTMLAnchorElement>(null);
+  const [isClicked, setIsClicked] = useState(false);
 
   useEffect(() => {
     const timer = setTimeout(() => setIsVisible(true), delay * 100);
     return () => clearTimeout(timer);
   }, [delay]);
 
+  const handleClick = () => {
+    if (isClicked) return;
+    setIsClicked(true);
+    setTimeout(() => {
+      router.push(href);
+    }, 1000);
+  };
+
+  const handleContextMenu = (e: React.MouseEvent | React.TouchEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
   return (
-    <Link
-      ref={ref}
-      href={href}
+    <div
+      onClick={handleClick}
+      onContextMenu={handleContextMenu}
       className={`
         group relative flex flex-col items-center justify-center
-        w-full aspect-square max-w-[180px]
+        w-full aspect-square max-w-[180px] cursor-pointer
         transition-all duration-500 ease-out
         ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}
+        select-none
+        touch-manipulation
+        [-webkit-touch-callout:none]
+        [-webkit-tap-highlight-color:transparent]
+        ${isClicked ? "pointer-events-none" : "pointer-events-auto"}
+        hover:z-50 active:z-50
       `}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-      style={{ animationDelay: `${delay * 0.1}s` }}
+      style={{ WebkitTouchCallout: "none" }}
     >
-      {/* 浮遊アニメーション用ラッパー */}
+      {/* 島のメインビジュアル */}
       <div
         className={`
           relative w-full h-full
-          transition-transform duration-700 ease-in-out
-          ${isHovered ? "scale-110 -translate-y-2" : ""}
+          transition-transform duration-300
+          ${isClicked ? "scale-90" : "group-hover:scale-110 group-active:scale-95"}
         `}
         style={{
-          animation: `float ${3 + delay * 0.2}s ease-in-out infinite`,
+          animation: isClicked ? "none" : `float ${3 + delay * 0.2}s ease-in-out infinite`,
           animationDelay: `${delay * 0.3}s`,
         }}
       >
-        {/* 島のベース（砂浜） */}
+        {/* 島のベース */}
         <div
           className={`
             absolute inset-0 rounded-[40%] 
             bg-gradient-to-b from-amber-200 via-amber-100 to-amber-300
-            shadow-2xl
-            transition-all duration-300
-            ${isHovered ? "shadow-amber-400/50" : "shadow-amber-900/30"}
+            shadow-2xl transition-all duration-300
+            ${isClicked ? "brightness-75" : "group-hover:shadow-amber-400/50"}
           `}
           style={{
             clipPath:
@@ -70,113 +86,56 @@ export function GameIsland({
           }}
         />
 
-        {/* 島のメイン部分（草・森） */}
+        {/* 島のメイン部分 */}
         <div
           className={`
             absolute inset-[10%] rounded-[50%]
-            ${color}
-            shadow-inner
+            ${color} shadow-inner
             flex items-center justify-center
             transition-all duration-300
-            ${isHovered ? "brightness-110" : ""}
+            ${isClicked ? "brightness-90" : "group-hover:brightness-110"}
           `}
           style={{
             clipPath:
               "polygon(20% 70%, 10% 50%, 15% 30%, 30% 15%, 50% 10%, 70% 15%, 85% 30%, 90% 50%, 80% 70%, 60% 75%, 40% 75%)",
           }}
         >
-          {/* アイコン */}
-          <div
-            className={`
-              text-white text-4xl drop-shadow-lg
-              transition-all duration-300
-              ${isHovered ? "scale-125 rotate-12" : ""}
-            `}
-          >
+          <div className="text-white text-4xl drop-shadow-lg" draggable="false">
             {icon}
           </div>
         </div>
+      </div>
 
-        {/* ヤシの木（装飾） */}
-        <div className="absolute top-[5%] right-[15%]">
-          <svg
-            width="24"
-            height="32"
-            viewBox="0 0 24 32"
-            className={`
-              transition-transform duration-500
-              ${isHovered ? "rotate-6" : ""}
-            `}
-          >
-            <path d="M12 32 L12 16" stroke="#8B4513" strokeWidth="2" />
-            <ellipse
-              cx="8"
-              cy="10"
-              rx="6"
-              ry="3"
-              fill="#228B22"
-              transform="rotate(-30 8 10)"
-            />
-            <ellipse
-              cx="16"
-              cy="10"
-              rx="6"
-              ry="3"
-              fill="#228B22"
-              transform="rotate(30 16 10)"
-            />
-            <ellipse
-              cx="12"
-              cy="8"
-              rx="5"
-              ry="3"
-              fill="#2E8B2E"
-              transform="rotate(-5 12 8)"
-            />
-          </svg>
+      {/* --- ラベルとコメントの入れ替えエリア --- */}
+      <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 w-full flex justify-center items-center h-8">
+        
+        {/* 名前ラベル：クリックされたら消える */}
+        <div className={`
+          absolute bg-white/95 px-3 py-1.5 rounded-full shadow-md border border-amber-200 
+          transition-all duration-300 ease-in-out
+          ${isClicked 
+            ? "opacity-0 scale-50 translate-y-4 pointer-events-none" 
+            : "opacity-100 scale-100 translate-y-0"}
+        `}>
+          <span className="text-xs md:text-sm font-bold text-gray-800 whitespace-nowrap">
+            {label}
+          </span>
         </div>
 
-        {/* 水面の反射エフェクト */}
-        <div
-          className={`
-            absolute -bottom-2 left-1/2 -translate-x-1/2
-            w-[90%] h-4
-            bg-gradient-to-r from-transparent via-cyan-300/40 to-transparent
-            rounded-full blur-sm
-            transition-opacity duration-300
-            ${isHovered ? "opacity-100" : "opacity-50"}
-          `}
-        />
-      </div>
+        {/* コメント：クリックされたら名前と同じスタイルで現れる */}
+        <div className={`
+          absolute bg-white/95 px-3 py-1.5 rounded-full shadow-md border border-amber-200 
+          transition-all duration-300 ease-out
+          ${isClicked 
+            ? "opacity-100 scale-110 translate-y-0" 
+            : "opacity-0 scale-50 translate-y-[-4px] pointer-events-none"}
+        `}>
+          <span className="text-xs md:text-sm font-black text-amber-600 whitespace-nowrap">
+            {desc}
+          </span>
+        </div>
 
-      {/* ラベル */}
-      <div
-        className={`
-          absolute -bottom-8 left-1/2 -translate-x-1/2
-          bg-white/95 backdrop-blur-sm
-          px-4 py-2 rounded-full
-          shadow-lg border-2 border-amber-200
-          transition-all duration-300
-          ${isHovered ? "scale-110 shadow-xl -translate-y-1" : ""}
-        `}
-      >
-        <span className="font-bold text-gray-800 whitespace-nowrap">
-          {label}
-        </span>
       </div>
-
-      {/* ホバー時の説明 */}
-      <div
-        className={`
-          absolute -bottom-16 left-1/2 -translate-x-1/2
-          text-sm text-gray-600 font-medium
-          whitespace-nowrap
-          transition-all duration-300
-          ${isHovered ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-2"}
-        `}
-      >
-        {desc}
-      </div>
-    </Link>
+    </div>
   );
 }

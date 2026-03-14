@@ -152,17 +152,35 @@ export default function GamePageClient({
 
   if (!mounted) return null;
 
+  // シーンによってコンテナのクラスを切り替える
+  const isTitle = scene === "title";
+
   return (
     <div
       ref={wrapperRef}
-      className="relative w-full h-full bg-black flex items-center justify-center overflow-hidden"
+      className={`relative w-full min-h-dvh bg-white flex items-center justify-center overflow-hidden ${
+        isTitle ? "p-4" : "p-0"
+      }`}
     >
-      <div className="relative w-full h-full max-w-[calc(100vh*4/3)] aspect-4/3 flex items-center justify-center bg-[#145014]">
+      {/* isTitle が true なら 4:3 の中央配置。
+        false (menu/game) なら 画面いっぱい (w-full h-full) に拡張。
+      */}
+      <div
+        className={`relative transition-all duration-700 ease-in-out flex items-center justify-center bg-[#145014] ${
+          isTitle
+            ? "w-full max-w-[calc(100vh*4/3)] aspect-4/3 shadow-2xl rounded-2xl border-2 border-white/10"
+            : "w-full h-full max-w-none aspect-none rounded-none border-none"
+        }`}
+      >
+        {/* Kaplay キャンバス */}
         <div
           ref={containerRef}
-          className={`absolute inset-0 z-0 transition-opacity ${isKaplayReady ? "opacity-100" : "opacity-0"}`}
+          className={`absolute inset-0 z-0 transition-opacity duration-500 ${
+            isKaplayReady ? "opacity-100" : "opacity-0"
+          }`}
         />
 
+        {/* UI レイヤー */}
         <div className="absolute inset-0 z-10 flex flex-col items-center pointer-events-none">
           {scene === "title" && <TitleView onStart={handleStartMission} />}
 
@@ -178,15 +196,10 @@ export default function GamePageClient({
 
           {scene === "game" && (
             <div className="w-full h-full pointer-events-auto relative">
-              {activeGame === "highlow" && (
-                <HighLowUI onQuit={handleQuit} onGameOver={handleGameOver} />
-              )}
-              {activeGame === "clash" && (
-                <ClashUI onQuit={handleQuit} onGameOver={handleGameOver} />
-              )}
-              {activeGame === "bj" && (
-                <BjUI onQuit={handleQuit} onGameOver={handleGameOver} />
-              )}
+              {/* 各ゲームUI */}
+              {activeGame === "highlow" && <HighLowUI onQuit={handleQuit} onGameOver={handleGameOver} />}
+              {activeGame === "clash" && <ClashUI onQuit={handleQuit} onGameOver={handleGameOver} />}
+              {activeGame === "bj" && <BjUI onQuit={handleQuit} onGameOver={handleGameOver} />}
 
               {isGameOver && (
                 <GameOverView

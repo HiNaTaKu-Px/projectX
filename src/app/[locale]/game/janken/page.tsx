@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react"; // useRef を追加
 import { useRouter } from "next/navigation";
 import BracketUI from "@/app/[locale]/game/janken/components/BracketUI";
 import { BgmController } from "@/app/[locale]/game/click/components/BgmController";
@@ -12,6 +12,8 @@ import { SkillButton } from "@/app/[locale]/game/janken/components/SkillButton";
 import { JankenAnimation } from "@/app/[locale]/game/janken/components/JankenAnimation";
 import { useJankenGame } from "@/app/[locale]/game/janken/logic/useJankenGame";
 import { CountHeader } from "@/app/[locale]/game/janken/components/CountHeader";
+// ★ 作成したアクションをインポート
+import { getJankenTotalWinsAction } from "@/app/[locale]/game/janken/logic/actions"; 
 
 export default function JankenPage() {
   const router = useRouter();
@@ -39,17 +41,17 @@ export default function JankenPage() {
 
   // ★ 優勝回数（累計）
   const [winCount, setWinCount] = useState(0);
+  const fetchedRef = useRef(false); // 二重読み込み防止用
 
+  // ★ 修正：fetch を Server Action に変更
   useEffect(() => {
+    if (fetchedRef.current) return;
+    fetchedRef.current = true;
+
     const fetchWinCount = async () => {
       try {
-        const res = await fetch("/api/wincount?game=janken_wins");
-        if (res.ok) {
-          const data = await res.json();
-          if (data && data.value !== undefined) {
-            setWinCount(data.value);
-          }
-        }
+        const totalWins = await getJankenTotalWinsAction();
+        setWinCount(totalWins);
       } catch (e) {
         console.error("優勝回数の取得に失敗しました", e);
       }
@@ -58,6 +60,7 @@ export default function JankenPage() {
     fetchWinCount();
   }, []);
 
+  // --- 以降、表示ロジックは変更なし ---
   const stageLabels = ["初戦", "二回戦", "準決勝", "決勝"];
   const stageBackgrounds = [
     "from-blue-900 to-black",
@@ -88,18 +91,16 @@ export default function JankenPage() {
         setShowBracket(false);
       }, 1800);
     }
-  }, [playerWin]);
+  }, [playerWin, setCurrentStage, setPlayerWin, setCpuWin]);
 
   return (
     <div className="relative">
-      {/* ★ 優勝回数ヘッダー */}
       <CountHeader winCount={winCount} currentStage={currentStage} />
 
       {resultState === "none" && (
         <BgmController src="/sounds/click/clickbgm.mp3" />
       )}
 
-      {/* ★ ステージ演出 */}
       <BracketUI show={showBracket} currentStage={currentStage} />
 
       <main
@@ -110,16 +111,13 @@ export default function JankenPage() {
           ${resultState !== "none" ? "pointer-events-none" : ""}`}
       >
         <div className="text-center mb-4 text-lg font-bold">
-          {/* ステージ名 */}
           <StageHeader label={stageLabels[currentStage]} />
 
-          {/* 勝敗スター */}
           <div className="flex justify-between px-2 w-full max-w-sm">
             <WinStars label="あなた" winCount={playerWin} />
             <WinStars label="CPU" winCount={cpuWin} />
           </div>
 
-          {/* じゃんけん演出 or 結果テキスト */}
           {animating ? (
             <JankenAnimation
               trigger={animating}
@@ -133,13 +131,11 @@ export default function JankenPage() {
             <p className="text-center text-xl h-8 flex items-center justify-center"></p>
           )}
 
-          {/* ✊✌️🖐️ ボタン */}
           <JankenButtons
             disabled={animating || resultState !== "none"}
             onPlay={handlePlay}
           />
 
-          {/* 必殺技 */}
           <div className="flex justify-center items-center gap-10 mt-4">
             <SkillButton
               disabled={skillPoints < 5 || animating}
@@ -150,7 +146,6 @@ export default function JankenPage() {
         </div>
       </main>
 
-      {/* 勝敗画面 */}
       {resultState !== "none" && (
         <ResultOverlay
           resultState={resultState}

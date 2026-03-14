@@ -2,27 +2,29 @@
   "Home": {
     "title": "HinataKu Island",
     "footer": "HiNaTaKu-Px.",
+    "dashboard": {
+      "systemActive": "System Active",
+      "welcome": "WELCOME, ",
+      "exit": "Exit",
+      "resume": "Resume Game",
+      "resumeSub": "RETURN TO MAIN INTERFACE // HOME",
+      "board": "BOARD",
+      "boardSub": "Check latest topics and community",
+      "score": "SCORE",
+      "scoreSub": "Check rankings and personal best",
+      "profile": "PROFILE",
+      "profileSub": "Avatar settings and info update",
+      "settings": "User Settings",
+      "displayName": "Display Name",
+      "save": "Save Changes",
+      "updating": "Updating..."
+    },
     "games": {
-      "click": {
-        "label": "Click Island",
-        "desc": "Tap, hit, and save up."
-      },
-      "janken": {
-        "label": "Janken Island",
-        "desc": "Win through to the championship."
-      },
-      "hockey": {
-        "label": "Hockey Island",
-        "desc": "Exceed your limits."
-      },
-      "escape": {
-        "label": "Escape Island",
-        "desc": "Collect and get out."
-      },
-      "casino": {
-        "label": "Casino Island",
-        "desc": "Luck is a skill. Gamble."
-      }
+      "click": { "label": "Click Island", "desc": "Tap, hit, and save up." },
+      "janken": { "label": "Janken Island", "desc": "Win through to the championship." },
+      "hockey": { "label": "Hockey Island", "desc": "Go Beyond Your Limits." },
+      "escape": { "label": "Escape Island", "desc": "Collect and get out." },
+      "casino": { "label": "Casino Island", "desc": "Luck is a skill. Gamble." }
     }
   }
 }

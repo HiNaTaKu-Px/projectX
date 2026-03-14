@@ -2,9 +2,11 @@ import { NextIntlClientProvider } from "next-intl";
 import { getMessages } from "next-intl/server";
 import { notFound } from "next/navigation";
 import { ThemeProvider } from "@/components/theme-provider";
-import { Toaster } from "sonner"; // 追加
+import { Toaster } from "sonner";
 import "../globals.css";
-import Header from "@/components/layout/Header";
+
+// Header のインポートは不要になるので削除してもOKです
+// import Header from "@/components/layout/Header";
 
 export const metadata = {
   icons: {
@@ -38,19 +40,14 @@ export default async function LocaleLayout({
             enableSystem
             disableTransitionOnChange
           >
-            <div className="bg-gray-700">
-              <Header />
-            </div>
+            {/* ヘッダー部分（<Header /> を含んでいた div）を削除 */}
             
             <main>{children}</main>
 
-            {/* Sonner の土台を設置 */}
-            {/* richColors: 成功/失敗で色分け, closeButton: 閉じるボタン表示 */}
             <Toaster 
               position="top-center" 
               richColors 
               closeButton 
-              
             />
           </ThemeProvider>
         </NextIntlClientProvider>

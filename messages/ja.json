@@ -2,27 +2,29 @@
   "Home": {
     "title": "ひなたくアイランド",
     "footer": "HiNaTaKu-Px.",
+    "dashboard": {
+      "systemActive": "システム稼働中",
+      "welcome": "ようこそ、",
+      "exit": "終了",
+      "resume": "ゲーム再開",
+      "resumeSub": "メイン画面に戻る // HOME",
+      "board": "掲示板",
+      "boardSub": "最新のトピックとコミュニティを確認",
+      "score": "スコア",
+      "scoreSub": "ランキングと自己ベストを確認",
+      "profile": "プロフィール",
+      "profileSub": "アバター設定と情報の更新",
+      "settings": "ユーザー設定",
+      "displayName": "表示名",
+      "save": "変更を保存",
+      "updating": "更新中..."
+    },
     "games": {
-      "click": {
-        "label": "クリック島",
-        "desc": "押して、当てて、貯めて。"
-      },
-      "janken": {
-        "label": "ジャンケン島",
-        "desc": "勝ち進んで、優勝。"
-      },
-      "hockey": {
-        "label": "ホッケー島",
-        "desc": "自分を超えろ。"
-      },
-      "escape": {
-        "label": "エスケープ島",
-        "desc": "集めて逃げろ。"
-      },
-      "casino": {
-        "label": "カジノ島",
-        "desc": "運も実力、ギャンブル。"
-      }
+      "click": { "label": "クリック島", "desc": "押して、当てて、貯めて。" },
+      "janken": { "label": "ジャンケン島", "desc": "勝ち進んで、優勝。" },
+      "hockey": { "label": "ホッケー島", "desc": "限界を超えろ。" },
+      "escape": { "label": "エスケープ島", "desc": "集めて逃げろ。" },
+      "casino": { "label": "カジノ島", "desc": "運も実力、ギャンブル。" }
     }
   }
 }

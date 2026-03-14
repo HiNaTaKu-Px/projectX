@@ -4,12 +4,11 @@ import React, { useState, useMemo } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { authClient } from "@/lib/auth-client";
-import { toast } from "sonner"; // toastをインポート
+import { toast } from "sonner";
 
 import { GameIsland } from "@/components/home/GameIsland";
 import { OceanBackground } from "@/components/home/OceanBackground";
 import { ScoreModal } from "@/components/home/ScoreModal";
-// LogoutSuccessModal のインポートは削除
 import { AvatarModal } from "@/components/home/AvatarModal";
 import { ConfirmModal } from "@/components/home/ConfirmModal";
 import { ModeToggle } from "@/components/mode-toggle";
@@ -32,31 +31,27 @@ export default function Home() {
   const router = useRouter();
   const params = useParams();
   const locale = params.locale as string;
+  const mode = ModeToggle() as any;
 
   const { data: session, isPending: isAuthLoading } = authClient.useSession();
   const user = session?.user;
 
   const [scores, setScores] = useState<any[]>([]);
-  // logoutSuccess ステートは削除
   const [modalType, setModalType] = useState<
     "menu" | "avatar" | "logout" | null
   >(null);
 
-  /**
-   * ログアウト処理：sonnerの通知を使用
-   */
   const handleLogout = async () => {
     await authClient.signOut({
       fetchOptions: {
         onSuccess: () => {
           setModalType(null);
-          // 成功時にふわっと通知を出す
           toast.success("ログアウトしました。また遊んでね！");
           router.push(`/${locale}/login`);
         },
         onError: (ctx) => {
           toast.error("エラーが発生しました: " + ctx.error.message);
-        }
+        },
       },
     });
   };
@@ -69,7 +64,7 @@ export default function Home() {
         href: "/game/click",
         color: "bg-gradient-to-br from-yellow-400 to-orange-500",
         desc: t("games.click.desc"),
-        icon: <Hand className="w-10 h-10" />,
+        icon: <Gamepad2 className="w-10 h-10" />,
       },
       {
         key: "janken",
@@ -77,7 +72,7 @@ export default function Home() {
         href: "/game/janken",
         color: "bg-gradient-to-br from-pink-400 to-red-500",
         desc: t("games.janken.desc"),
-        icon: <Gamepad2 className="w-10 h-10" />,
+        icon: <Hand className="w-10 h-10" />,
       },
       {
         key: "hockey",
@@ -112,70 +107,44 @@ export default function Home() {
       <div className="absolute inset-0 -z-10">
         <OceanBackground />
       </div>
-
-      {/* --- 右上の設定エリア --- */}
-      <div className="absolute top-4 right-4 z-50 flex items-center gap-3">
-        <ModeToggle />
-        {!isAuthLoading && user && (
-          <div className="hidden sm:block bg-background/50 backdrop-blur px-4 py-1.5 rounded-full border text-sm font-medium text-foreground">
-            {user.name}
-          </div>
-        )}
-      </div>
-
       {/* --- 下部のナビゲーションメニュー --- */}
-      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-50">
-        <nav className="flex items-center gap-2 bg-background/80 backdrop-blur-md p-2 rounded-2xl border shadow-2xl">
-          <Button
-            variant="ghost"
-            className="flex flex-col gap-1 h-14 w-16 sm:w-20 rounded-xl"
-            onClick={() => router.push(`/${locale}/dashboard`)}
-          >
-            <LayoutDashboard className="w-5 h-5" />
-            <span className="text-[10px] font-bold">設定</span>
-          </Button>
-
-          <Button
-            variant="ghost"
-            className="flex flex-col gap-1 h-14 w-16 sm:w-20 rounded-xl transition-all hover:bg-blue-500/10 hover:text-blue-500"
-            onClick={() => router.push(`/${locale}/board`)}
-          >
-            <MessageSquare className="w-5 h-5" />
-            <span className="text-[10px] font-bold">掲示板</span>
-          </Button>
-
-          <Button
-            variant="ghost"
-            className="flex flex-col gap-1 h-14 w-16 sm:w-20 rounded-xl"
-            onClick={() => setModalType("menu")}
-          >
-            <Trophy className="w-5 h-5" />
-            <span className="text-[10px] font-bold">スコア</span>
-          </Button>
-
-          <Button
-            variant="ghost"
-            className="flex flex-col gap-1 h-14 w-16 sm:w-20 rounded-xl"
-            onClick={() => setModalType("avatar")}
-          >
-            <UserCircle className="w-5 h-5" />
-            <span className="text-[10px] font-bold">プロフ</span>
-          </Button>
-
-          <div className="w-px h-8 bg-border mx-1" />
-
-          <Button
-            variant="ghost"
-            className="flex flex-col gap-1 h-14 w-16 sm:w-20 rounded-xl text-destructive hover:text-destructive hover:bg-destructive/10"
-            onClick={() => setModalType("logout")}
-          >
-            <LogOut className="w-5 h-5" />
-            <span className="text-[10px] font-bold">終了</span>
-          </Button>
-        </nav>
+      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-50 w-full max-w-fit px-4">
+  <nav className="flex flex-row items-center bg-background/80 backdrop-blur-md rounded-2xl border shadow-2xl transition-all overflow-hidden p-1">
+    
+    {/* 1. ユーザー情報セクション (左側) */}
+    {!isAuthLoading && user && (
+      <div className="flex items-center justify-center py-2 px-4 select-none border-r border-foreground/5">
+        <div className="flex items-center font-mono text-[10px] tracking-[0.2em]">
+          <span className="text-foreground/20 font-black">
+            ACCOUNT
+          </span>
+          <span className="mx-3 text-foreground/10">/</span>
+          <span className="text-foreground/70 font-bold uppercase">
+            {user.name}
+          </span>
+        </div>
       </div>
+    )}
 
-      {/* モーダル群 (logoutSuccess関連を消去) */}
+    {/* 2. ボタンセクション (右側) */}
+    {/* border-t を削除し、flex-row の中の一部として配置 */}
+    <div className="flex items-center gap-1 px-2 justify-center">
+      <Button
+        variant="ghost"
+        className="flex flex-col gap-1 h-12 w-20 sm:w-24 rounded-xl transition-all hover:bg-primary/5 hover:text-primary"
+        onClick={() => router.push(`/${locale}/dashboard`)}
+      >
+        <div className="scale-100">
+          <LayoutDashboard className="w-4 h-4" />
+        </div>
+        <span className="text-[10px] font-bold tracking-tight">設定</span>
+      </Button>
+    </div>
+
+  </nav>
+</div>
+
+      {/* モーダル群 */}
       {modalType === "menu" && (
         <ScoreModal scores={scores} onClose={() => setModalType(null)} />
       )}
@@ -195,9 +164,9 @@ export default function Home() {
           onCancel={() => setModalType(null)}
         />
       )}
-
       {/* メインコンテンツ */}
-      <div className="flex-1 overflow-y-auto px-4 pb-32 pt-20">
+      <div className="flex-1 overflow-y-auto px-4 pb-40 pt-10">
+        {" "}
         <div className="max-w-5xl mx-auto">
           <h1 className="text-foreground text-4xl sm:text-6xl font-black drop-shadow-sm mb-12 text-center uppercase tracking-tighter">
             {t("title")}
@@ -210,7 +179,6 @@ export default function Home() {
           </div>
         </div>
       </div>
-
       <footer className="absolute bottom-2 left-0 right-0 z-10 text-center text-muted-foreground/50 text-[10px] pointer-events-none">
         © {new Date().getFullYear()} {t("footer")}
       </footer>

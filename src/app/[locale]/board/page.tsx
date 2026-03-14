@@ -4,14 +4,17 @@ import { desc, eq } from "drizzle-orm";
 import { createPost } from "@/lib/actions/post";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
-import { PostItem } from "@/components/board/PostItem"; // パスは適宜調整
+import { PostItem } from "@/components/board/PostItem";
 import Link from "next/link";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, Lock } from "lucide-react"; // Lockアイコンを追加
 
 export default async function BoardPage() {
   const session = await auth.api.getSession({
     headers: await headers(),
   });
+
+  // ゲストユーザーかどうかを判定
+  const isGuest = session?.user.email === "guest@example.com";
 
   const allPosts = await db
     .select({
@@ -34,7 +37,8 @@ export default async function BoardPage() {
         <h1 className="text-2xl font-bold uppercase tracking-tighter">Board</h1>
       </header>
 
-      {session ? (
+      {/* セッションがあり、かつゲストではない場合のみフォームを表示 */}
+      {session && !isGuest ? (
         <form 
           action={async (formData) => {
             "use server";
@@ -57,6 +61,14 @@ export default async function BoardPage() {
             </button>
           </div>
         </form>
+      ) : session && isGuest ? (
+        /* --- ゲスト専用のメッセージ表示 --- */
+        <div className="flex items-center justify-center gap-3 p-6 bg-amber-500/5 border border-amber-500/10 rounded-xl text-amber-500/80">
+          <Lock className="w-4 h-4" />
+          <p className="text-sm font-bold uppercase tracking-wider">
+            Guest Mode: Posting is disabled (閲覧専用モード)
+          </p>
+        </div>
       ) : (
         <div className="p-8 border border-dashed rounded-xl text-center text-slate-500 border-slate-800">
           投稿するにはログインが必要です
@@ -65,7 +77,12 @@ export default async function BoardPage() {
 
       <div className="space-y-4">
         {allPosts.map((post) => (
-          <PostItem key={post.id} post={post} currentUserId={session?.user.id} />
+          <PostItem 
+            key={post.id} 
+            post={post} 
+            // ゲストの場合は削除ボタンなども出さないように currentUserId を調整
+            currentUserId={isGuest ? undefined : session?.user.id} 
+          />
         ))}
       </div>
     </div>

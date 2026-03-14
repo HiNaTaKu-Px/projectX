@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-// インポートパスを相対パスに修正して解決を図ります
 import { updateCoinsAction } from "../../../../lib/actions/user";
+import { saveClickerItemsAction } from "./logic/actions"; // パスを調整してください
 import { useClickGame } from "./logic/useClickGame";
 import { ClickButton } from "./components/ClickButton";
 import { CoinDisplay } from "./components/CoinDisplay";
@@ -18,13 +18,20 @@ import { useRouter } from "next/navigation";
 import { BgmController } from "./components/BgmController";
 import { toast } from "sonner";
 
-export default function ClickGamePage({ initialCoins }: { initialCoins: number }) {
+export default function ClickGamePage({ 
+  initialCoins, 
+  initialStock = {} 
+}: { 
+  initialCoins: number; 
+  initialStock?: Record<string, number>;
+}) {
   const router = useRouter();
-  const [isSaving, setIsSaving] = useState(false);
+  const [isSavingManual, setIsSavingManual] = useState(false);
 
   const {
     coins,
-    isDirty, // ロジックから変更フラグを取得
+    isDirty,
+    isSaving: isAutoSaving, // フック側の自動保存状態
     stockItems,
     message,
     visible,
@@ -37,17 +44,17 @@ export default function ClickGamePage({ initialCoins }: { initialCoins: number }
     useAllItemsAllTypes,
     handleClear,
     setCoinEffect,
-  } = useClickGame(initialCoins);
+  } = useClickGame(initialCoins, initialStock);
 
-  // -----------------------------
-  // ★ 1. 共通の保存ロジック
-  // -----------------------------
   const performSave = async () => {
-    if (isSaving) return false;
-    
-    setIsSaving(true);
+    if (isSavingManual) return false;
+    setIsSavingManual(true);
     try {
-      await updateCoinsAction(coins);
+      // コインとアイテム在庫の両方を最終保存
+      await Promise.all([
+        updateCoinsAction(coins),
+        saveClickerItemsAction(stockItems)
+      ]);
       toast.success("データを保存しました！");
       return true;
     } catch (error) {
@@ -55,13 +62,10 @@ export default function ClickGamePage({ initialCoins }: { initialCoins: number }
       toast.error("保存に失敗しました");
       return false;
     } finally {
-      setIsSaving(false);
+      setIsSavingManual(false);
     }
   };
 
-  // -----------------------------
-  // ★ 2. 保存して終了（クリア時やトーストのアクション用）
-  // -----------------------------
   const handleSaveAndExit = async () => {
     if (isDirty) {
       const success = await performSave();
@@ -71,58 +75,44 @@ export default function ClickGamePage({ initialCoins }: { initialCoins: number }
     }
   };
 
-  // -----------------------------
-  // ★ 3. 戻るボタン押下時のチェック (sonner通知)
-  // -----------------------------
-  const handleBackWithCheck = () => {
-    if (isDirty) {
-      toast("保存されていないデータがあります", {
-        description: "現在のコインを保存して終了しますか？",
-        duration: Infinity,
-        action: {
-          label: "保存して終了",
-          onClick: async () => {
-            const success = await performSave();
-            if (success) router.push("/");
+  useEffect(() => {
+    const handleCustomHomeRequest = (e: Event) => {
+      if (isDirty) {
+        e.preventDefault();
+        toast("保存されていないデータがあります", {
+          description: "現在の進行状況を保存して終了しますか？",
+          duration: Infinity,
+          action: {
+            label: "保存して終了",
+            onClick: async () => {
+              const success = await performSave();
+              if (success) router.push("/");
+            },
           },
-        },
-        cancel: {
-          label: "保存せず終了",
-          onClick: () => router.push("/"),
-        },
-      });
-    } else {
-      router.back();
-    }
-  };
+        });
+      }
+    };
+    window.addEventListener("custom-home-request", handleCustomHomeRequest);
+    return () => window.removeEventListener("custom-home-request", handleCustomHomeRequest);
+  }, [isDirty, coins, stockItems, isSavingManual, router]);
 
-  // -----------------------------
-  // ★ 4. タブ閉じ/リロード対策 (予備)
-  // -----------------------------
   const coinsRef = useRef(coins);
+  const stockRef = useRef(stockItems);
   useEffect(() => {
     coinsRef.current = coins;
-  }, [coins]);
+    stockRef.current = stockItems;
+  }, [coins, stockItems]);
 
   useEffect(() => {
     const backupSave = () => {
-      if (coinsRef.current !== initialCoins) {
+      if (coinsRef.current !== initialCoins || JSON.stringify(stockRef.current) !== JSON.stringify(initialStock)) {
         updateCoinsAction(coinsRef.current).catch(() => {});
+        saveClickerItemsAction(stockRef.current).catch(() => {});
       }
     };
     window.addEventListener("beforeunload", backupSave);
     return () => window.removeEventListener("beforeunload", backupSave);
-  }, [initialCoins]);
-
-  // -----------------------------
-
-  if (coins === null || coins === undefined) {
-    return (
-      <main className="w-full min-h-dvh flex items-center justify-center text-xl">
-        読み込み中...
-      </main>
-    );
-  }
+  }, [initialCoins, initialStock]);
 
   const ORDER = ["💡ノーマル", "✨レア", "🎇ウルトラ", "🎆レジェンド"];
   const sortedItems: [string, number][] = ORDER.filter(
@@ -133,16 +123,7 @@ export default function ClickGamePage({ initialCoins }: { initialCoins: number }
     <main className="w-full min-h-dvh p-4 border-4 border-yellow-300 rounded-2xl shadow-2xl bg-white relative">
       <BgmController src="/sounds/click/clickbgm.mp3" />
 
-      {/* 戻るボタン */}
-      <button 
-        onClick={handleBackWithCheck}
-        className="absolute top-6 left-6 z-50 bg-white/80 backdrop-blur p-3 rounded-full shadow-lg hover:scale-110 transition-transform"
-      >
-        🔙 戻る
-      </button>
-
-      {/* 保存中の待機表示 */}
-      {isSaving && (
+      {(isSavingManual || isAutoSaving) && (
         <div className="fixed inset-0 bg-black/10 z-[100] flex items-center justify-center backdrop-blur-sm">
           <div className="bg-white px-8 py-4 rounded-full shadow-2xl border-2 border-yellow-400 font-bold animate-bounce">
             💰 保存中...
@@ -161,11 +142,7 @@ export default function ClickGamePage({ initialCoins }: { initialCoins: number }
         <CoinEffect coinEffect={coinEffect} onFinish={() => setCoinEffect(null)} />
       </div>
 
-      <ItemList
-        sortedItems={sortedItems}
-        onUseItem={handleUseItem}
-        onUseAll={useAllItemsAllTypes}
-      />
+      <ItemList sortedItems={sortedItems} onUseItem={handleUseItem} onUseAll={useAllItemsAllTypes} />
 
       <GachaPanel currentCoins={coins} handleGacha={handleGacha} />
 

@@ -1,20 +1,23 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useHockeyGame } from "@/app/[locale]/game/hockey/logic/useHockeyGame";
 import { ScoreHeader } from "@/app/[locale]/game/hockey/components/ScoreHeader";
 import { StartButton } from "@/app/[locale]/game/hockey/components/StartButton";
 import { ResetButton } from "@/app/[locale]/game/hockey/components/ResetButton";
 import { GameField } from "@/app/[locale]/game/hockey/components/GameField";
 import { useRouter } from "next/navigation";
+import { gethockeyScoreAction } from "./logic/actions";
 
 export default function HockeyPage() {
   const router = useRouter();
+  const [dbMaxScore, setDbMaxScore] = useState(0);
+  const fetchedRef = useRef(false);
 
   const {
     started,
     showReset,
-    resultState, // ★ ロジックから勝敗ステートを取得
+    resultState,
     logic,
     fieldRef,
     startGame,
@@ -24,63 +27,50 @@ export default function HockeyPage() {
     handleTouchMove,
   } = useHockeyGame();
 
-  const handleBack = () => {
-    backGame(); // スコア保存
-    router.back(); // 前のページに戻る
+  const handleBack = async () => {
+    await backGame();
+    router.back();
   };
 
-  const [dbMaxScore, setDbMaxScore] = useState(0);
-
-  // ハイスコアの初期取得
+  // サーバーアクションでハイスコア取得 (404エラー対策)
   useEffect(() => {
-    const fetchHighScore = async () => {
-      try {
-        const res = await fetch("/api/highscore?game=hockey");
-        if (res.ok) {
-          const data = await res.json();
-          if (data && data.value) {
-            setDbMaxScore(data.value);
-          }
-        }
-      } catch (e) {
-        console.error("ハイスコアの取得に失敗しました", e);
-      }
-    };
+    if (fetchedRef.current) return;
+    fetchedRef.current = true;
 
-    fetchHighScore();
+    const fetchScore = async () => {
+      const val = await gethockeyScoreAction();
+      setDbMaxScore(val);
+    };
+    fetchScore();
   }, []);
 
-  // DBのスコアと現在のセッションの最高スコアのうち、高い方を表示
   const displayMaxScore = Math.max(dbMaxScore, logic?.maxReflectCount ?? 0);
 
   return (
     <main
       className={`
-        w-full min-h-[100dvh] bg-[#080812]
+        w-full min-h-dvh bg-[#080812]
         flex flex-col relative overflow-hidden touch-none
         pt-8 p-4 border-4 border-sky-300 rounded-2xl shadow-2xl
         ${started && !showReset ? "md:cursor-none" : "md:cursor-auto"}
       `}
     >
-      {/* スコア表示ヘッダー */}
       <ScoreHeader
         score={logic?.reflectCount ?? 0}
         maxScore={displayMaxScore}
       />
 
-      {/* ゲーム開始前：スタートボタン */}
       {!started && <StartButton onStart={startGame} />}
 
-      {/* ゲームオーバー時：アバター付きリセットボタン（勝敗を渡す） */}
-      {showReset && (
+      {/* showReset と resultState 両方があるときのみ表示 (型エラー対策) */}
+      {showReset && resultState && (
         <ResetButton
           onReset={resetGame}
           onBack={handleBack}
-          resultState={resultState} // ★ ここで win / lose を渡す
+          resultState={resultState}
         />
       )}
 
-      {/* ゲームフィールド本体 */}
       <GameField
         fieldRef={fieldRef}
         logic={logic}
